@@ -135,16 +135,37 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 // ----------------------------------------------------------------------------
 symbolTable.addPrefix('LEFT_PAREN', function(parser) {
 
-    var e;
-    if (parser.tokenNot('RIGHT_PAREN')) {
-        e = parser.getExpression(0);
+    var type = parser.get();
+
+    // Type casts
+    if (parser.advanceIf('TYPE')) {
+
+        // Convert into a CAST token
+        this.id = 'CAST';
+        var cast = parser.tokenFromSymbol(this);
+
+        cast.type = parser.getType(type);
+        parser.advance('RIGHT_PAREN');
+
+        cast.nud(parser);
+
+        return cast;
 
     } else {
-        parser.error('Expected expression but got');
-    }
 
-    parser.advance('RIGHT_PAREN');
-    return e;
+        // Simple wrapping around expressions
+        var e;
+        if (parser.tokenNot('RIGHT_PAREN')) {
+            e = parser.getExpression(0);
+
+        } else {
+            parser.error('Expected expression but got');
+        }
+
+        parser.advance('RIGHT_PAREN');
+        return e;
+
+    }
 
 });
 

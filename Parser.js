@@ -77,7 +77,7 @@ Parser.prototype = {
     },
 
     peek: function() {
-        return this.createSymbol(this.__tokens[this.__currentIndex]);
+        return this.tokenFromSymbol(this.__tokens[this.__currentIndex]);
     },
 
     advanceIf: function(id) {
@@ -103,12 +103,12 @@ Parser.prototype = {
             return;
         }
 
-        this.__currentToken = this.createSymbol(this.__tokens[this.__currentIndex++]);
+        this.__currentToken = this.tokenFromSymbol(this.__tokens[this.__currentIndex++]);
         return this.__currentToken;
 
     },
 
-    createSymbol: function(token) {
+    tokenFromSymbol: function(token) {
 
         // Grab the token spec from the symbolTables list
         var obj = symbolTable.symbols[token.id];
@@ -145,9 +145,10 @@ Parser.prototype = {
             token = this.__currentToken;
 
         this.advance();
+
         left = token.nud(this);
 
-        while (rbp < this.__currentToken.lbp) {
+        while(rbp < this.__currentToken.lbp) {
             token = this.__currentToken;
             this.advance();
             left = token.led(this, left);

@@ -71,7 +71,6 @@ symbolTable.addInfix('BIT_XOR', 34);
 symbolTable.addInfix('BIT_OR', 32);
 
 symbolTable.addInfix('BIT_AND', 30);
-symbolTable.addInfix('NE', 30);
 
 // Shortcircuit Operators -----------------------------------------------------
 symbolTable.addInfixRight('AND', 30);
@@ -128,6 +127,7 @@ symbolTable.addPrefix('DECREMENT');
 symbolTable.addPrefix('MINUS');
 symbolTable.addPrefix('PLUS');
 symbolTable.addPrefix('NOT');
+symbolTable.addPrefix('CAST');
 symbolTable.addPrefix('BIT_NOT');
 symbolTable.addPrefix('AT');
 symbolTable.addPrefix('NEW');
