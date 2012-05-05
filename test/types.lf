@@ -1,0 +1,30 @@
+# plain builtin
+void a
+bool b
+int c
+float d
+string e
+list f
+hash g
+
+void a = null
+bool b = true
+int c = 2
+float d = 4.0
+string e = 'hello world'
+
+# sub type builtin
+list[int] g = [1, 2, 3, 4]
+list[list[int]] h = [[1, 2], [3, 4]]
+hash[User] b
+map[int, e] e
+
+# function types
+void(int, float) double
+
+void(int, float) double(int a, int b):
+    hello()
+
+void(int, float) double(list[int] a, hash[User] b):
+    hello()
+

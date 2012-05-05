@@ -1,0 +1,79 @@
+# plain if
+if a == b:
+
+if a == b:
+    test()
+
+
+# if else
+if a == b:
+
+else:
+
+if a == b:
+    test()
+
+else:
+
+if a == b:
+else:
+    foo()
+
+if a == b:
+    test()
+
+else:
+    foo()
+
+
+# if elif
+if a == b:
+elif c:
+
+if a == b:
+    test()
+
+elif c != a:
+
+if a == b:
+elif c == d:
+    foo()
+
+if a == b:
+    test()
+
+elif !e:
+    foo()
+
+
+# if elif else
+if true:
+elif false:
+else:
+
+if 0:
+elif 1:
+elif 2:
+else:
+
+if true:
+    test()
+
+elif false:
+    test()
+
+else:
+    test()
+
+if 0:
+    test()
+
+elif 1:
+    test()
+
+elif 2:
+    test()
+
+else:
+    test()
+
