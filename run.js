@@ -22,5 +22,6 @@
 var lufa = require('./lufa');
 
 lufa.compileFile('test/flow.lf');
-console.log(lufa.compileFile('test/types.lf'));
+lufa.compileFile('test/types.lf');
+console.log(lufa.compileFile('test/functional.lf'));
 

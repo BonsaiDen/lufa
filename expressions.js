@@ -25,14 +25,29 @@ var symbolTable = require('./symbolTable');
 // ----------------------------------------------------------------------------
 symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
 
+    this.arity = 'unary';
+    this.id = 'LIST';
+
     var elements = [];
     if (parser.tokenNot('RIGHT_BRACKET')) {
 
         while (true) {
 
             elements.push(parser.getExpression(0));
+
             if (parser.tokenNot('COMMA')) {
+
+                // Check for list comprehension
+                if (parser.tokenIs('FOR')) {
+
+                    parser.advance('FOR');
+                    symbolTable.symbols['FOR'].std.call(this, parser, true);
+                    this.id = 'LIST_COMPREHENSION';
+
+                }
+
                 break;
+
             }
 
             parser.advance('COMMA');
@@ -41,11 +56,14 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
 
     }
 
-    parser.advance('RIGHT_BRACKET');
+    if (this.id === 'LIST') {
+        this.inner = elements;
 
-    this.inner = elements;
-    this.arity = 'unary';
-    this.id = 'LIST';
+    } else {
+        this.body = elements[0];
+    }
+
+    parser.advance('RIGHT_BRACKET');
 
     return this;
 

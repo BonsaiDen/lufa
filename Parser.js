@@ -41,6 +41,7 @@ Parser.prototype = {
 
         if (typeof token === 'string') {
             msg = token;
+            token = this.__currentToken;
         }
 
         msg = msg || 'Unexpected token';
@@ -76,7 +77,7 @@ Parser.prototype = {
     },
 
     peek: function() {
-        return this.__tokens[this.__currentIndex];
+        return this.createSymbol(this.__tokens[this.__currentIndex]);
     },
 
     advanceIf: function(id) {
@@ -92,7 +93,7 @@ Parser.prototype = {
 
     advance: function(id) {
 
-        var arity, obj, token, value;
+        var token, value;
         if (id && this.__currentToken.not(id)) {
             this.error(this.__currentToken, 'Expected "' + id + '" but got');
         }
@@ -102,35 +103,39 @@ Parser.prototype = {
             return;
         }
 
-        token = this.__tokens[this.__currentIndex];
-        this.__currentIndex += 1;
+        this.__currentToken = this.createSymbol(this.__tokens[this.__currentIndex++]);
+        return this.__currentToken;
+
+    },
+
+    createSymbol: function(token) {
 
         // Grab the token spec from the symbolTables list
-        obj = symbolTable.symbols[token.id];
+        var obj = symbolTable.symbols[token.id];
         if (!obj) {
             this.error(token, 'Unkown token');
         }
 
         // Create new token object
-        this.__currentToken = Object.create(obj);
-        this.__currentToken.id = token.id;
-        this.__currentToken.arity = null;
-        this.__currentToken.line = token.line;
-        this.__currentToken.col = token.col;
-        this.__currentToken.value = token.value;
+        var t = Object.create(obj);
+        t.id = token.id;
+        t.arity = null;
+        t.line = token.line;
+        t.col = token.col;
+        t.value = token.value;
 
         // Pre parse some values
         if (token.id === 'TYPE') {
-            this.__currentToken.type = token.value;
+            t.type = token.value;
 
         } else if (token.id === 'STRING' || token.id === 'BOOLEAN' || token.id === 'INTEGER' || token.id === 'FLOAT') {
-            this.__currentToken.arity = 'literal';
+            t.arity = 'literal';
 
         } else if (token.id === 'IDENTIFIER') {
-            this.__currentToken.arity = 'name';
+            t.arity = 'name';
         }
 
-        return this.__currentToken;
+        return t;
 
     },
 

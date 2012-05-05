@@ -31,10 +31,11 @@ symbolTable.addStatement('TYPE', function(parser) {
 // For In Loops ---------------------------------------------------------------
 // ----------------------------------------------------------------------------
 symbolTable.addSymbol('IN');
-symbolTable.addStatement('FOR', function(parser) {
+symbolTable.addStatement('FOR', function(parser, isComprehension) {
 
     // The index variables for iteration
     this.indexes = [];
+
 
     // Parse the indecies
     while(parser.tokenNot('IN')) {
@@ -44,6 +45,11 @@ symbolTable.addStatement('FOR', function(parser) {
 
         // for (IDENTIFIER) in (expression)
         if (next.is('COMMA', 'IN')) {
+
+            // Indexes cannot come from an outer scope in the case of comprehensions
+            if (isComprehension) {
+                parser.error('Index in list comprehensions must have a TYPE');
+            }
 
             parser.advance('IDENTIFIER', 'Expected IDENTIFIER as forin loop index');
             this.indexes.push(token);
@@ -73,10 +79,14 @@ symbolTable.addStatement('FOR', function(parser) {
     // The expression which serves as the iterator
     this.iterator = parser.getExpression(0);
 
-    parser.advance('COLON', 'Expected COLON after forin loop header');
+    // List comprehensions do not have a COLON or a body
+    if (!isComprehension) {
+        parser.advance('COLON', 'Expected COLON after forin loop header');
 
-    // Grab body, if it exists
-    this.body = parser.getBody();
+        // Grab body, if it exists
+        this.body = parser.getBody();
+
+    }
 
     return this;
 
