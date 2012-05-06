@@ -45,6 +45,7 @@ symbolTable.addStatement('SCOPE', function(parser) {
 
 
 // Infix Operators ------------------------------------------------------------
+symbolTable.addInfix('ELLIPSIS', 70);
 symbolTable.addInfix('EXP', 60);
 symbolTable.addInfix('MUL', 60);
 symbolTable.addInfix('DIV', 60);

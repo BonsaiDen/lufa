@@ -21,8 +21,17 @@
   */
 var symbolTable = require('./symbolTable');
 
+
 // Variable Declarations ------------------------------------------------------
 // ----------------------------------------------------------------------------
+symbolTable.addStatement('IDENTIFIER', function(parser) {
+    return parser.getDeclaration(this, true);
+
+}, function(parser) {
+    // only run IDENTIFIERs as statements if the next token is also an IDENTIFIER
+    return parser.peek().is('IDENTIFIER');
+});
+
 symbolTable.addStatement('TYPE', function(parser) {
     return parser.getDeclaration(this, true);
 });
@@ -153,5 +162,133 @@ symbolTable.addStatement('ELIF', function(parser) {
 symbolTable.addStatement('ELSE', function(parser) {
     parser.error(this, 'Not if statement found for');
 });
+
+
+
+// Classes --------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+symbolTable.addSymbol('MODIFIER');
+symbolTable.addSymbol('EXTENDS');
+symbolTable.addStatement('CLASS', function(parser) {
+
+    // class (IDENTIFIER) [extends (IDENTIFIER)]:
+    this.arity = 'declaration';
+    this.name = parser.get();
+    parser.advance('IDENTIFIER');
+
+    this.base = parser.advanceIf('EXTENDS') ? parser.get() : null;
+    parser.advance('IDENTIFIER');
+    parser.advance('COLON');
+
+    this.members = [];
+    this.methods = [];
+    this.constructors = [];
+
+    if (!parser.advanceIf('BLOCK_START')) {
+        return this;
+    }
+
+    // Grab constructors and methods
+    while(true) {
+
+        // Collect modifiers
+        var modifiers = {
+            'static': 0,
+            'const': 0,
+            'public': 0,
+            'protected': 0,
+            'private': 0,
+            'abstract': 0
+        };
+        while(true) {
+
+            if (!parser.get().is('MODIFIER')) {
+                break;
+            }
+
+            modifiers[parser.get().value]++;
+            parser.advance('MODIFIER');
+
+        }
+
+        // Grab actual start of member
+        var token = parser.get();
+
+        // Constructors, must have the same IDENTIFIER value as the class name
+        // abstract ones
+        if (token.is('IDENTIFIER')) {
+            parser.getDeclaration(token, true);
+            token.id = 'CONSTRUCTOR';
+            this.constructors.push(token);
+
+        } else {
+
+            parser.advance('TYPE');
+            parser.getDeclaration(token, true, modifiers['abstract'] > 0);
+
+            // TODO Variables, abstracts may NOT define a value
+            if (token.is('VARIABLE')) {
+                token.id = 'MEMBER';
+                this.members.push(token);
+
+            // TODO Methods, abstract ones may NOT end with a COLON
+            } else {
+                token.id = 'METHOD';
+                this.methods.push(token);
+            }
+
+        }
+
+        // Validate modifiers
+        // we do this after parsing so that we can have some meaningful error
+        // messages (line numbers and such)
+        for(var i in modifiers) {
+            if (modifiers[i] > 1) {
+                parser.error(token, 'Multiple ' + i + ' modifiers for');
+            }
+        }
+
+        if (modifiers['private'] + modifiers['protected'] + modifiers['public'] > 1) {
+            parser.error(token, 'Multiple visibility modifiers for');
+        }
+
+        // Assign modifiers
+        token.isConst = modifiers['const'] === 1;
+        token.isStatic = modifiers['static'] === 1;
+        token.isAbstract = modifiers['abstract'] === 1;
+
+        if (modifiers['private'] === 1) {
+            token.visbility = 'private';
+
+        } else if (modifiers['protected'] === 1) {
+            token.visbility = 'protected';
+
+        } else {
+            token.visbility = 'public';
+        }
+
+        if (parser.get().is('BLOCK_END')) {
+            break;
+        }
+
+    }
+
+    parser.advance('BLOCK_END');
+
+    console.log(this);
+
+    return this;
+
+});
+
+
+
+
+
+
+
+
+
+
 
 

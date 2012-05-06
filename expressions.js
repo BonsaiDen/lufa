@@ -77,14 +77,33 @@ symbolTable.addInfix('LEFT_BRACKET', 80, function(parser, left) {
     this.left = left;
 
     if (parser.tokenIs('RIGHT_BRACKET')) {
-        parser.error('Expected index or range expression but got');
+        parser.error('Expected index or range expression but got empty brackets');
     }
 
-    this.inner = parser.getExpression(0);
-    this.arity = 'binary';
-    this.id = 'INDEX';
+    this.inner = [];
+
+    while(true) {
+
+        var next = parser.get();
+        if (next.is('RIGHT_BRACKET', 'COLON')) {
+            this.inner.push(null);
+
+        } else {
+            this.inner.push(parser.getExpression(0));
+        }
+
+        if (parser.tokenNot('COLON')) {
+            break;
+        }
+
+        parser.advance('COLON');
+
+    }
 
     parser.advance('RIGHT_BRACKET');
+
+    this.id = this.inner.length > 1 ? 'RANGE' : 'INDEX';
+    this.arity = 'binary';
 
     return this;
 
@@ -188,6 +207,7 @@ symbolTable.addInfix('LEFT_PAREN', 80, function(parser, left) {
         }
 
     // Call on () getExpression
+    // TODO might be broken in certain cases
     } else {
         this.arity = 'binary';
         this.left = left;

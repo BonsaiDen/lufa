@@ -1,0 +1,26 @@
+class Cat extends Animal:
+
+    private string name = ''
+    abstract private int age
+    private string color = 'gray'
+
+    Cat(string name = 'Kitty', int age = 2):
+        string name = name
+        int age = age
+
+    Cat(string color = 'blue'):
+        string color = color
+
+    private void meow(int c, int b):
+        bla()
+
+    protected void meow(int a, int b):
+        hello()
+        
+    public void meow(int i):
+        
+    public abstract static void test()
+        
+
+Cat nyan = new Cat()
+

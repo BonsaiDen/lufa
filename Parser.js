@@ -91,6 +91,12 @@ Parser.prototype = {
 
     },
 
+    back: function() {
+        this.__currentIndex -= 2;
+        this.__currentToken = this.tokenFromSymbol(this.__tokens[this.__currentIndex]);
+        return this.__currentToken;
+    },
+
     advance: function(id) {
 
         var token, value;
@@ -162,9 +168,15 @@ Parser.prototype = {
 
         var next = this.__currentToken;
         if (next.std) {
-            this.advance();
-            //scope.reserve(next); # TODO scope stuff
-            return next.std(this);
+
+            if (!next.check || next.check(this)) {
+
+                //scope.reserve(next); # TODO scope stuff
+                this.advance();
+                return next.std(this);
+
+            }
+
         }
 
         // Make sure this is a valid expression for a statement
@@ -243,30 +255,40 @@ Parser.prototype = {
 
     // Special methods for parsing certain sub constructs ---------------------
     // ------------------------------------------------------------------------
-    getDeclaration: function(dec, body) {
+    getDeclaration: function(dec, getValue, isAbstract) {
 
         this.getType(dec);
+        this.advance('IDENTIFIER');
 
         dec.id = 'VARIABLE';
         dec.arity = 'declaration';
-        dec.name = this.get().value;
         dec.right = null;
 
-        this.advance('IDENTIFIER');
-
-        if (body) {
+        if (getValue) {
 
             // Variable with assignment
             if (this.advanceIf('ASSIGN')) {
-                dec.right = this.getExpression(0);
+
+                if (isAbstract) {
+                    this.error(dec, 'Declared as abstract but has a value,');
+
+                } else {
+                    dec.right = this.getExpression(0);
+                }
 
             // Function
             } else if (this.advanceIf('LEFT_PAREN')) {
 
                 dec.id = 'FUNCTION';
                 this.getFunctionParams(dec);
-                this.advance('COLON');
-                dec.body = this.getBlock();
+
+                if (!isAbstract) {
+                    this.advance('COLON');
+                    dec.body = this.getBlock();
+
+                } else if (this.advanceIf('COLON')) {
+                    this.error(dec, 'Declared as abstract but has a body,');
+                }
 
             }
 
@@ -287,11 +309,18 @@ Parser.prototype = {
         type.type = {
             value: type.value,
             isFunction: false,
-            params: null
+            params: null,
+            builtin: true
         };
 
         // small cleanup
         delete type.value;
+
+        // User defined type
+        if (type.is('IDENTIFIER')) {
+            type.type.builtin = false;
+            return type;
+        }
 
         // Grab sub types
         if (type.is('TYPE') && this.advanceIf('LEFT_BRACKET')) {
@@ -359,16 +388,23 @@ Parser.prototype = {
             while(true) {
 
                 // For signature definitions
+                var param;
                 if (typeOnly) {
 
-                    var param = this.get();
+                    param = this.get();
                     this.advance('TYPE');
                     this.getType(param);
 
                     params.push(param);
 
                 } else {
-                    params.push(this.getParamPair(this.get()));
+                    param = this.getParamPair(this.get());
+                    params.push(param);
+                }
+
+                // Var args like (int b...) method will then receive a list
+                if (this.advanceIf('ELLIPSIS')) {
+                    param.vararg = true;
                 }
 
                 if (this.get().not('COMMA')) {

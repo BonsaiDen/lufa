@@ -33,16 +33,7 @@ function compile(source) {
 
 }
 
-function tokens(source) {
-
-    var tokens = lexer.parse(source, 4);
-    for(var i = 0, l = tokens.length; i < l; i++) {
-        console.log(tokens[i].toString());
-    }
-
-}
-
-function compileFile(file) {
+function compileFile(file, debug) {
 
     console.log('Compiling', file);
 
@@ -50,12 +41,19 @@ function compileFile(file) {
         tokens = lexer.parse(source, 4, true),
         p = new Parser();
 
+    if (debug) {
+        for(var i = 0, l = tokens.length; i < l; i++) {
+            console.log(tokens[i].toString());
+        }
+    }
+
     var tree = p.parse(tokens);
-    return util.inspect(tree, false, 10);
+    if (debug) {
+        console.log(util.inspect(tree, false, 10));
+    }
 
 }
 
 exports.compile = compile;
-exports.tokens = tokens;
 exports.compileFile = compileFile;
 

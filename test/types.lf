@@ -28,6 +28,9 @@ void(int, float) double(int a, int b):
 void(int, float) double(list[int] a, hash[User] b):
     hello()
 
+void(int, float...) double(list[int] a, hash[User] b...):
+    hello()
+
 
 int e = +(int)'2' + 3
 

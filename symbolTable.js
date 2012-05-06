@@ -115,8 +115,8 @@ function addAssignment(id) {
 
     return addInfixRight(id, 10, function(parser, left) {
 
-        if (left.id !== 'DOT' && left.id !== 'LEFT_BRACKET' && left.arity !== 'name') {
-            left.error('Bad lvalue.');
+        if (left.not('DOT', 'INDEX', 'RANGE') && left.arity !== 'name') {
+            parser.error(left, 'Bad lvalue.');
         }
 
         this.left = left;
@@ -130,9 +130,10 @@ function addAssignment(id) {
 
 }
 
-function addStatement(s, f) {
+function addStatement(s, f, c) {
     var x = addSymbol(s);
     x.std = f;
+    x.check = c;
     return x;
 }
 
