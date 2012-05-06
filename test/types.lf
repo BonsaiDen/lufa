@@ -23,13 +23,17 @@ map[int, e] e
 void(int, float) double
 
 void(int, float) double(int a, int b):
-    hello()
+    
+    void foo(int bar, float fux):
+        ret bar * fux
+
+    ret foo
 
 void(int, float) double(list[int] a, hash[User] b):
-    hello()
+    ret hello() + 2
 
 void(int, float...) double(list[int] a, hash[User] b...):
-    hello()
+    ret hello()
 
 
 int e = +(int)'2' + 3

@@ -146,7 +146,7 @@ symbolTable.addSymbol('STRING').nud = itself;
 symbolTable.addSymbol('BOOLEAN').nud = itself;
 symbolTable.addSymbol('NULL').nud = itself;
 symbolTable.addSymbol('IDENTIFIER').nud = function() {
-    this.id = 'VARIABLE';
+    this.id = 'NAME';
     this.arity = 'name';
     return this;
 };

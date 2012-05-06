@@ -99,6 +99,19 @@ symbolTable.addStatement('FROM', function(parser) {
 });
 
 
+// Returns --------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+symbolTable.addStatement('RETURN', function(parser) {
+
+    this.arity = 'return';
+    this.left = parser.getExpression(0)
+
+    parser.advance('EOL');
+    return this;
+
+});
+
+
 // While Loops ----------------------------------------------------------------
 // ----------------------------------------------------------------------------
 symbolTable.addStatement('WHILE', function(parser) {

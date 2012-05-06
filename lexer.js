@@ -30,15 +30,12 @@
 
 /*jshint evil: true, regexdash: false, regexp: false */
 var KEYWORDS = {
-    'true': 'BOOLEAN',
-    'false': 'BOOLEAN',
-    'null': 'NULL',
+
+    'class': 'CLASS',
     'extends': 'EXTENDS',
-    'from': 'FROM',
-    'import': 'IMPORT',
-    'as': 'AS',
-    'export': 'EXPORT',
+    'package': 'PACKAGE',
     'extern': 'EXTERN',
+
     'if': 'IF',
     'elif': 'ELIF',
     'else': 'ELSE',
@@ -50,9 +47,19 @@ var KEYWORDS = {
     'in': 'IN',
     'while': 'WHILE',
     'scope': 'SCOPE',
-    'class': 'CLASS',
-    'package': 'PACKAGE',
-    'outer': 'OUTER'
+    'ret': 'RETURN',
+
+    'true': 'BOOLEAN',
+    'false': 'BOOLEAN',
+    'null': 'NULL',
+
+    'from': 'FROM',
+    'import': 'IMPORT',
+    'as': 'AS',
+    'export': 'EXPORT',
+
+    'outer': 'OUTER' // modifier or not?
+
 };
 
 var TYPES = 'void bool int float string list map hash'.split(' ');

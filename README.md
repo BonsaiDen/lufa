@@ -74,6 +74,18 @@ still a lot of experimentation going on the the syntax of the language.
 - other operators (read up on some ruby stuff)
 - more functional things
 
+
+## Keywords
+
+    class extends package extern
+    if elif else try catch finally raise for in while scope ret
+    new del is
+    void bool int float string list map hash
+    true false null
+    const static abstract public protected private outer
+    from import as export 
+
+
 # License
 
 **lufa** is licenses under MIT.
