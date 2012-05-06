@@ -63,6 +63,8 @@ symbolTable.addInfix('LT', 43);
 symbolTable.addInfix('LTE', 43);
 symbolTable.addInfix('GT', 43);
 symbolTable.addInfix('GTE', 43);
+symbolTable.addInfix('IN', 43);
+symbolTable.addInfix('IS', 43);
 
 symbolTable.addInfix('EQ', 40);
 symbolTable.addInfix('NE', 40);
@@ -70,8 +72,6 @@ symbolTable.addInfix('NE', 40);
 symbolTable.addInfix('BIT_AND', 36);
 symbolTable.addInfix('BIT_XOR', 34);
 symbolTable.addInfix('BIT_OR', 32);
-
-symbolTable.addInfix('BIT_AND', 30);
 
 // Shortcircuit Operators -----------------------------------------------------
 symbolTable.addInfixRight('AND', 30);
@@ -136,15 +136,12 @@ symbolTable.addPrefix('DELETE');
 
 
 // Literals -------------------------------------------------------------------
-var itself = function() {
-    return this;
-};
+symbolTable.addLiteral('INTEGER');
+symbolTable.addLiteral('FLOAT');
+symbolTable.addLiteral('STRING');
+symbolTable.addLiteral('BOOLEAN');
+symbolTable.addLiteral('NULL');
 
-symbolTable.addSymbol('INTEGER').nud = itself;
-symbolTable.addSymbol('FLOAT').nud = itself;
-symbolTable.addSymbol('STRING').nud = itself;
-symbolTable.addSymbol('BOOLEAN').nud = itself;
-symbolTable.addSymbol('NULL').nud = itself;
 symbolTable.addSymbol('IDENTIFIER').nud = function() {
     this.id = 'NAME';
     this.arity = 'name';

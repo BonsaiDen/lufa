@@ -21,9 +21,10 @@ still a lot of experimentation going on the the syntax of the language.
 
 - Classes (not sure yet whether single or multi inheritance):
     
-    - With static / private / protected methods and method overloading
-    - Methods assigned to a variable will keep the instance context
+    - With static / private / protected methods and method overloading(? how to mix with default params?)
+    - Class methods assigned to a variable will keep the instance context
     - Member access via "@" instead of "this"
+    - Destructors
 
 - Functional features such as:
     
@@ -62,15 +63,14 @@ still a lot of experimentation going on the the syntax of the language.
 - scope
 - import / export
 - ret
+- @ (member access)
 
 ### TODO
 
-- @ (member access)
+- parsing hashes / maps 
 - externs
 - try / catch / finally / raise
 - package????
-- parsing hashes / structs
-- some typeof check
 - outer for scope access in case of multiple defined variables
 - other operators (read up on some ruby stuff)
 - more functional things

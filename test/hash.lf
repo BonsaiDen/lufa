@@ -1,25 +1,45 @@
+e = 1 + 2
+
 # a hash defintion
 hash User = {
-    string name 
-    int age
+    string name,
+    int age,
     string favoriteColor = 'blue' # hashes support defaults too
 }
 
 # creating a hash instance, notice the sub typing and the different syntax inside the hash
-hash[User] e = { name: 'Ivo', age: 25 }
+hash[User] user = { name: 'Ivo', age: 25 }
 
 # accessing the values via keys
-e[name] # 'Ivo'
-e['name'] # 'Ivo'
+name = user.name # 'Ivo'
+name = user['name'] # 'Ivo'
 
-e[name] = e['name'] = 'Marko'
+user.name = user['name'] = 'Marko'
 
 # subhashing
 hash[User] Admin = {
     bool partying = false
 }
 
-hash[Admin] f = { name: 'Ivo', age: 25, partying: true }
+hash[Admin] admin = { name: 'Ivo', age: 25, partying: true }
+
+# TODO just literals, or expressions?
+map[int, string] numbers = {
+    #1: 'One',
+    #2: 'Two',
+    #3: 'Three'
+    #4: 'Four',
+    #5: 'Five'
+}
 
 
+str = numbers[1] # map it
+num = numbers[:'One'] # we can map either way
+
+# TODO support built-in types here
+if admin is Admin:
+    print('is a Admin hash')
+
+if 2 in [1, 2]:
+    print('is in')
 

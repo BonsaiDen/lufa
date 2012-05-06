@@ -114,37 +114,77 @@ symbolTable.addInfix('LEFT_BRACKET', 80, function(parser, left) {
 // ----------------------------------------------------------------------------
 symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
-    var elements = [];
-    //if (parser.tokenNot('RIGHT_CURLY')) {
+    this.id = 'HASH';
 
-        //// TODO make this different
-        //while (true) {
+    this.inner = [];
+    if (parser.tokenNot('RIGHT_CURLY')) {
 
-            //var n = parser.get();
-            //if (n.arity !== 'name' && n.arity !== 'literal') {
-                //parser.get().error('Bad key.');
-            //}
+        // Determine the type
+        var next = parser.peek();
 
-            //parser.advance();
-            //parser.advance('COLON');
+        // Hash literal
+        if (next.is('COLON')) {
 
-            //var v = parser.getExpression(0);
-            //v.key = n.value;
-            //elements.push(v);
-            //if (get().id !== 'COMMA') {
-                //break;
-            //}
+            var token = parser.get();
 
-            //advance('COMMA');
+            //
+            if (token.is('IDENTIFIER')) {
 
-        //}
-    //}
+                this.id = 'HASHVALUE';
+
+                while(true) {
+
+                    token = parser.get();
+
+                    parser.advance('IDENTIFIER');
+                    parser.advance('COLON');
+                    token.left = parser.getExpression(0);
+
+                    this.inner.push(token);
+
+                    if (parser.get().not('COMMA')) {
+                        break;
+                    }
+
+                    parser.advance('COMMA');
+
+                }
+
+            } else {
+
+                this.id = 'MAP';
+
+                console.log(token);
+
+            }
+
+
+        // Hash description
+        } else {
+
+            this.id = 'HASHDESC';
+
+            while(true) {
+
+                parser.advance();
+                this.inner.push(parser.getDeclaration(parser.get(), true, false, true));
+
+                if (parser.get().not('COMMA')) {
+                    break;
+                }
+
+                parser.advance('COMMA');
+
+            }
+
+        }
+
+    }
 
     parser.advance('RIGHT_CURLY');
 
-    this.inner = elements;
+    console.log(parser.get());
     this.arity = 'unary';
-    this.id = 'HASH';
     return this;
 
 });
@@ -191,7 +231,7 @@ symbolTable.addPrefix('LEFT_PAREN', function(parser) {
 
 // Calls ----------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-symbolTable.addInfix('LEFT_PAREN', 80, function(parser, left) {
+symbolTable.addInfix('LEFT_PAREN', 75, function(parser, left) {
 
     var params = [];
 

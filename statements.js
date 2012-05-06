@@ -104,7 +104,7 @@ symbolTable.addStatement('FROM', function(parser) {
 symbolTable.addStatement('RETURN', function(parser) {
 
     this.arity = 'return';
-    this.left = parser.getExpression(0)
+    this.left = parser.getExpression(0);
 
     parser.advance('EOL');
     return this;
@@ -296,6 +296,7 @@ symbolTable.addStatement('CLASS', function(parser) {
             'private': 0,
             'abstract': 0
         };
+
         while(true) {
 
             if (!parser.get().is('MODIFIER')) {
@@ -319,7 +320,7 @@ symbolTable.addStatement('CLASS', function(parser) {
 
             // Error out on missnamed constructor
             if (token.type.value !== this.name) {
-                parser.error(token, 'Constructor function must match name of class,')
+                parser.error(token, 'Constructor function must match name of class,');
             }
 
             this.constructors.push(token);
@@ -328,7 +329,7 @@ symbolTable.addStatement('CLASS', function(parser) {
 
             // We expect a type
             if (!parser.advanceIf('TYPE') && !parser.advanceIf('IDENTIFIER')) {
-                error('Expected either a built-in or user type');
+                parser.error('Expected either a built-in or user type');
             }
 
             parser.getDeclaration(token, true, modifiers['abstract'] > 0);

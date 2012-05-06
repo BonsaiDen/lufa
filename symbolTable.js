@@ -23,7 +23,7 @@ var symbolTable = {};
 var baseSymbol = {
 
     nud: function (parser) {
-        parser.error(this, 'Invalid expression: ');
+        parser.error(this, 'Invalid expression, most likely a statement token:');
     },
 
     led: function (parser, left) {
@@ -97,7 +97,7 @@ function addInfixRight(id, bp, led) {
 
 }
 
-function addPrefix(id, nud) {
+function addPrefix(id, nud, precedence) {
 
     var s = addSymbol(id);
     s.nud = nud || function(parser) {
@@ -137,9 +137,22 @@ function addStatement(s, f, c) {
     return x;
 }
 
+function addLiteral(s) {
+
+    var x = addSymbol(s);
+    x.arity = 'literal';
+    x.nud = function() {
+        return this;
+    };
+
+    return x;
+
+}
+
 module.exports = {
     symbols: symbolTable,
     addSymbol: addSymbol,
+    addLiteral: addLiteral,
     addInfix: addInfix,
     addInfixRight: addInfixRight,
     addPrefix: addPrefix,

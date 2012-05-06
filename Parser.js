@@ -265,7 +265,7 @@ Parser.prototype = {
 
     // Special methods for parsing certain sub constructs ---------------------
     // ------------------------------------------------------------------------
-    getDeclaration: function(dec, getValue, isAbstract) {
+    getDeclaration: function(dec, getValue, isAbstract, inHash) {
 
         this.getType(dec);
 
@@ -306,7 +306,7 @@ Parser.prototype = {
             }
 
             // There's no EOL after a block end
-            if (!dec.body) {
+            if (!dec.body && !inHash) {
                 this.advance('EOL');
             }
 

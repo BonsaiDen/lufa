@@ -27,4 +27,5 @@ lufa.compileFile('test/functional.lf');
 lufa.compileFile('test/loops.lf');
 lufa.compileFile('test/class.lf');
 lufa.compileFile('test/import.lf');
+lufa.compileFile('test/hash.lf', true);
 

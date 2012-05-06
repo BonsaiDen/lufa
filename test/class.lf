@@ -11,6 +11,7 @@ class Cat extends Animal:
     Cat(string color = 'blue'):
         @color = color
 
+    # TODO destructor syntax
     private void meow(int c, int b):
         bla()
 
@@ -24,9 +25,7 @@ class Cat extends Animal:
     Cat clone():
         ret new Cat()
 
-
 Cat nyan = new Cat()
-
 
 class Animal:
     
@@ -37,5 +36,4 @@ class Animal:
 
     void say(string message):
         @print(message, @foo)
-
 
