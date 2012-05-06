@@ -1,0 +1,15 @@
+import module
+import module, otherModule, fooModule
+import module as mod
+import module as mod, otherModule as other, fooModule
+
+import module.subModule
+import module.subModule, otherModule.subModule, fooModule
+import module.subModule as subMod
+import module.subModule as subMod, otherModule.subModule as otherSub, fooModule
+
+from math import ceil, floor, round, sqrt
+from math import ceil as c, floor as f, round as r, sqrt as s
+
+
+export Kitten as b

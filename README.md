@@ -54,17 +54,17 @@ still a lot of experimentation going on the the syntax of the language.
 - calls
 - if / elif / else
 - for in loops
+- while loops
 - list comprehensions
 - classes
 - types (builtin with sub types and user defined types)
 - scope
+- import / export
 
 ### TODO
 
 - ret(urn)
 - @ (member access)
-- while loops
-- import / export
 - externs
 - try / catch / finally / raise
 - package????

@@ -12,7 +12,3 @@ string foo = 'hello world'[::-1]
 list[int] i = [1, 2, 3, 4]
 i[1:2] = [3, 2]
 
-for int i in 0...10:
-    for int e in a...b:
-        print(i, e)
-

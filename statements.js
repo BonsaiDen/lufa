@@ -1,5 +1,4 @@
-/**
-  * Copyright (c) 2012 Ivo Wetzel.
+/**  * Copyright (c) 2012 Ivo Wetzel.
   *
   * Permission is hereby granted, free of charge, to any person obtaining a copy
   * of this software and associated documentation files (the "Software"), to deal
@@ -37,14 +36,94 @@ symbolTable.addStatement('TYPE', function(parser) {
 });
 
 
+// Import / Export ------------------------------------------------------------
+// ----------------------------------------------------------------------------
+function parseImportExport(parser) {
+
+    this.arity = 'module';
+    this.names = [];
+    this.base = null;
+
+    delete this.value;
+
+    while(true) {
+
+        var module = parser.getModuleName();
+
+        // Name mapping
+        if (parser.advanceIf('AS')) {
+            var name = parser.get();
+            parser.advance('IDENTIFIER');
+            module.as = name;
+        }
+
+        this.names.push(module);
+
+        if (parser.get().not('COMMA')) {
+            break;
+        }
+
+        parser.advance('COMMA');
+
+    }
+
+    parser.advance('EOL');
+
+    return this;
+
+}
+
+symbolTable.addSymbol('AS');
+symbolTable.addStatement('IMPORT', function(parser) {
+    return parseImportExport.call(this, parser);
+});
+
+symbolTable.addStatement('EXPORT', function(parser) {
+    return parseImportExport.call(this, parser);
+});
+
+symbolTable.addStatement('FROM', function(parser) {
+
+    this.id = 'IMPORT';
+    this.arity = 'module';
+
+    var base = parser.getModuleName(parser);
+
+    parser.advance('IMPORT');
+    parseImportExport.call(this, parser);
+
+    this.base = base;
+
+    return this;
+
+});
+
+
+// While Loops ----------------------------------------------------------------
+// ----------------------------------------------------------------------------
+symbolTable.addStatement('WHILE', function(parser) {
+
+    this.arity = 'loop';
+
+    this.condition = parser.getExpression(0);
+    parser.advance('COLON', 'Expected COLON after while loop header');
+
+    this.body = parser.getBody();
+
+    return this;
+
+});
+
+
 // For In Loops ---------------------------------------------------------------
 // ----------------------------------------------------------------------------
 symbolTable.addSymbol('IN');
 symbolTable.addStatement('FOR', function(parser, isComprehension) {
 
+    this.arity = 'loop';
+
     // The index variables for iteration
     this.indexes = [];
-
 
     // Parse the indecies
     while(parser.tokenNot('IN')) {
@@ -274,8 +353,6 @@ symbolTable.addStatement('CLASS', function(parser) {
     }
 
     parser.advance('BLOCK_END');
-
-    console.log(this);
 
     return this;
 

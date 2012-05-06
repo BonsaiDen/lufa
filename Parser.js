@@ -444,6 +444,29 @@ Parser.prototype = {
 
         return param;
 
+    },
+
+    getModuleName: function() {
+
+        var name = this.get(),
+            next = name;
+
+        while(true) {
+
+            this.advance('IDENTIFIER');
+            if (this.get().not('DOT')) {
+                break;
+            }
+
+            this.advance('DOT');
+
+            next.left = this.get();
+            next = next.left;
+
+        }
+
+        return name;
+
     }
 
 };

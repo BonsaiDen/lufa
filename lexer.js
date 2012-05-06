@@ -36,6 +36,7 @@ var KEYWORDS = {
     'extends': 'EXTENDS',
     'from': 'FROM',
     'import': 'IMPORT',
+    'as': 'AS',
     'export': 'EXPORT',
     'extern': 'EXTERN',
     'if': 'IF',
