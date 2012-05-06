@@ -37,7 +37,6 @@ var KEYWORDS = {
     'from': 'FROM',
     'import': 'IMPORT',
     'export': 'EXPORT',
-    'as': 'AS',
     'extern': 'EXTERN',
     'if': 'IF',
     'elif': 'ELIF',
@@ -51,11 +50,12 @@ var KEYWORDS = {
     'while': 'WHILE',
     'scope': 'SCOPE',
     'class': 'CLASS',
-    'package': 'PACKAGE'
+    'package': 'PACKAGE',
+    'outer': 'OUTER'
 };
 
 var TYPES = 'void bool int float string list map hash'.split(' ');
-var MODIFIERS = 'const static abstract public protected private outer'.split(' ');
+var MODIFIERS = 'const static abstract public protected private'.split(' ');
 
 var OPERATORS = {
     '>>>=': 'ASSIGN_URSH',

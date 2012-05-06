@@ -19,7 +19,7 @@ class Cat extends Animal:
         
     public void meow(int i):
         
-    public abstract static void test()
+    public static abstract void test()
         
 
 Cat nyan = new Cat()

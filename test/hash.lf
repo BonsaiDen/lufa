@@ -1,0 +1,23 @@
+# a hash defintion
+hash User = {
+    string name 
+    int age
+    string favoriteColor = 'blue' # hashes support defaults too
+}
+
+# creating a hash instance, notice the sub typing and the different syntax inside the hash
+hash[User] e = { name: 'Ivo', age: 25 }
+
+# accessing the values via keys
+e[name] # 'Ivo'
+e['name'] # 'Ivo'
+
+e[name] = e['name'] = 'Marko'
+
+# subhashing
+hash[User] Admin = {
+    bool partying = false
+}
+
+hash[Admin] f = { name: 'Ivo', age: 25, partying: true }
+

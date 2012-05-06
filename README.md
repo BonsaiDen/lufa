@@ -37,6 +37,43 @@ still a lot of experimentation going on the the syntax of the language.
     - Default return for functions(still unsure about this)
     - "setter" args for functions (needs some more thought)
 
+
+## Lexer
+
+- All done
+
+
+## Parser
+
+- Literals
+- integers / floats / strings
+- lists
+- expressions
+- functions
+- index/range
+- calls
+- if / elif / else
+- for in loops
+- list comprehensions
+- classes
+- types (builtin with sub types and user defined types)
+- scope
+
+### TODO
+
+- ret(urn)
+- @ (member access)
+- while loops
+- import / export
+- externs
+- try / catch / finally / raise
+- package????
+- parsing hashes / structs
+- some typeof check
+- outer for scope access in case of multiple defined variables
+- other operators (read up on some ruby stuff)
+- more functional things
+
 # License
 
 **lufa** is licenses under MIT.

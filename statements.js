@@ -217,7 +217,7 @@ symbolTable.addStatement('CLASS', function(parser) {
         // Constructors, must have the same IDENTIFIER value as the class name
         // abstract ones
         if (token.is('IDENTIFIER')) {
-            parser.getDeclaration(token, true);
+            parser.getDeclaration(token, true, modifiers['abstract'] > 0);
             token.id = 'CONSTRUCTOR';
             this.constructors.push(token);
 
