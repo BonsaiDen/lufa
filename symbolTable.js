@@ -102,7 +102,7 @@ function addPrefix(id, nud, precedence) {
     var s = addSymbol(id);
     s.nud = nud || function(parser) {
         //scope.reserve(this); # TODO re-enable
-        this.left = parser.getExpression(70);
+        this.left = parser.getExpression(18);
         this.arity = 'unary';
         return this;
     };
@@ -113,14 +113,14 @@ function addPrefix(id, nud, precedence) {
 
 function addAssignment(id) {
 
-    return addInfixRight(id, 10, function(parser, left) {
+    return addInfixRight(id, 2, function(parser, left) {
 
         if (left.not('DOT', 'INDEX', 'RANGE', 'MEMBER') && left.arity !== 'name') {
             parser.error(left, 'Bad left hand value for assignment,');
         }
 
         this.left = left;
-        this.right = parser.getExpression(9);
+        this.right = parser.getExpression(1);
         this.isAssignment = true;
         this.arity = 'binary';
 

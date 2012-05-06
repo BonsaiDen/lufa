@@ -41,5 +41,5 @@ if admin is Admin:
     print('is a Admin hash')
 
 if 2 in [1, 2]:
-    print('is in')
+    print('2 is in [1, 2]')
 

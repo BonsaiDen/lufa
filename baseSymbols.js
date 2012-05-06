@@ -45,41 +45,41 @@ symbolTable.addStatement('SCOPE', function(parser) {
 
 
 // Infix Operators ------------------------------------------------------------
-symbolTable.addInfix('ELLIPSIS', 70);
-symbolTable.addInfix('EXP', 60);
-symbolTable.addInfix('MUL', 60);
-symbolTable.addInfix('DIV', 60);
-symbolTable.addInfix('DIV_INT', 60);
-symbolTable.addInfix('MOD', 60);
+symbolTable.addInfix('MUL', 15);
+symbolTable.addInfix('DIV', 15);
+symbolTable.addInfix('DIV_INT', 15);
+symbolTable.addInfix('EXP', 15);
+symbolTable.addInfix('MOD', 15);
 
-symbolTable.addInfix('PLUS', 50);
-symbolTable.addInfix('MINUS', 50);
+symbolTable.addInfix('PLUS', 13);
+symbolTable.addInfix('MINUS', 13);
 
-symbolTable.addInfix('RSHIFT', 46);
-symbolTable.addInfix('LSHIFT', 46);
-symbolTable.addInfix('URSHIFT', 46);
+symbolTable.addInfix('RSHIFT', 12);
+symbolTable.addInfix('LSHIFT', 12);
+symbolTable.addInfix('URSHIFT', 12);
 
-symbolTable.addInfix('LT', 43);
-symbolTable.addInfix('LTE', 43);
-symbolTable.addInfix('GT', 43);
-symbolTable.addInfix('GTE', 43);
-symbolTable.addInfix('IN', 43);
-symbolTable.addInfix('IS', 43);
+symbolTable.addInfix('LT', 10);
+symbolTable.addInfix('LTE', 10);
+symbolTable.addInfix('GT', 10);
+symbolTable.addInfix('GTE', 10);
+symbolTable.addInfix('IN', 10);
+symbolTable.addInfix('IS', 10);
+symbolTable.addInfix('ELLIPSIS', 10);
 
-symbolTable.addInfix('EQ', 40);
-symbolTable.addInfix('NE', 40);
+symbolTable.addInfix('EQ', 9);
+symbolTable.addInfix('NE', 9);
 
-symbolTable.addInfix('BIT_AND', 36);
-symbolTable.addInfix('BIT_XOR', 34);
-symbolTable.addInfix('BIT_OR', 32);
+symbolTable.addInfix('BIT_AND', 8);
+symbolTable.addInfix('BIT_XOR', 7);
+symbolTable.addInfix('BIT_OR', 6);
 
 // Shortcircuit Operators -----------------------------------------------------
-symbolTable.addInfixRight('AND', 30);
-symbolTable.addInfixRight('OR', 30);
+symbolTable.addInfixRight('AND', 5);
+symbolTable.addInfixRight('OR', 5);
 
 
 // Ternary Operator -----------------------------------------------------------
-symbolTable.addInfix('HOOK', 20, function(parser, left) {
+symbolTable.addInfix('HOOK', 3, function(parser, left) {
 
     this.left = left;
     this.right = parser.getExpression(0);
@@ -94,7 +94,7 @@ symbolTable.addInfix('HOOK', 20, function(parser, left) {
 
 
 // Dot operator ---------------------------------------------------------------
-symbolTable.addInfix('DOT', 80, function(parser, left) {
+symbolTable.addInfix('DOT', 20, function(parser, left) {
 
     this.left = left;
     if (parser.get().arity !== 'name') {

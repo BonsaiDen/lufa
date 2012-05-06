@@ -72,7 +72,7 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
 
 // Access and slicing ---------------------------------------------------------
 // ----------------------------------------------------------------------------
-symbolTable.addInfix('LEFT_BRACKET', 80, function(parser, left) {
+symbolTable.addInfix('LEFT_BRACKET', 20, function(parser, left) {
 
     this.left = left;
 
@@ -231,7 +231,7 @@ symbolTable.addPrefix('LEFT_PAREN', function(parser) {
 
 // Calls ----------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-symbolTable.addInfix('LEFT_PAREN', 75, function(parser, left) {
+symbolTable.addInfix('LEFT_PAREN', 19, function(parser, left) {
 
     var params = [];
 
