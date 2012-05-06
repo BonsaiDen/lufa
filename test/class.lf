@@ -5,11 +5,11 @@ class Cat extends Animal:
     private string color = 'gray'
 
     Cat(string name = 'Kitty', int age = 2):
-        string name = name
-        int age = age
+        @name = name
+        @age = age
 
     Cat(string color = 'blue'):
-        string color = color
+        @color = color
 
     private void meow(int c, int b):
         bla()
@@ -21,6 +21,21 @@ class Cat extends Animal:
         
     public static abstract void test()
         
+    Cat clone():
+        ret new Cat()
+
 
 Cat nyan = new Cat()
+
+
+class Animal:
+    
+    int foo = 2
+
+    Animal(int foo):
+        @foo = a
+
+    void say(string message):
+        @print(message, @foo)
+
 

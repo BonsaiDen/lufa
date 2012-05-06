@@ -182,6 +182,17 @@ Parser.prototype = {
         // Make sure this is a valid expression for a statement
         var exp = this.getExpression(0);
 
+        if (!this.determineSideEffects(exp)) {
+            this.error(exp, 'Bad expression statement, expected expression with side effect, instead saw');
+        }
+
+        this.advance('EOL');
+        return exp;
+
+    },
+
+    determineSideEffects: function(exp) {
+
         // Determine side effects
         var hasSideEffect = false,
             e = exp;
@@ -197,6 +208,10 @@ Parser.prototype = {
 
             }
 
+            if (e.left) {
+                hasSideEffect |= this.determineSideEffects(e.left);
+            }
+
             // TODO Tenary / bitwise support?
             if (e.is('AND', 'OR')) {
                 e = e.right;
@@ -207,12 +222,7 @@ Parser.prototype = {
 
         }
 
-        if (!hasSideEffect) {
-            this.error(e, 'Bad expression statement, expected expression with side effect (like assignment or decrement), instead saw');
-        }
-
-        this.advance('EOL');
-        return exp;
+        return hasSideEffect;
 
     },
 
@@ -258,6 +268,9 @@ Parser.prototype = {
     getDeclaration: function(dec, getValue, isAbstract) {
 
         this.getType(dec);
+
+        // TODO does not correctly work in all cases as it seems
+        dec.name = this.get().value;
         this.advance('IDENTIFIER');
 
         dec.id = 'VARIABLE';

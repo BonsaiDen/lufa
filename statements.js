@@ -265,11 +265,14 @@ symbolTable.addStatement('CLASS', function(parser) {
 
     // class (IDENTIFIER) [extends (IDENTIFIER)]:
     this.arity = 'declaration';
-    this.name = parser.get();
+    this.name = parser.get().value;
     parser.advance('IDENTIFIER');
 
     this.base = parser.advanceIf('EXTENDS') ? parser.get() : null;
-    parser.advance('IDENTIFIER');
+    if (this.base) {
+        parser.advance('IDENTIFIER');
+    }
+
     parser.advance('COLON');
 
     this.members = [];
@@ -277,6 +280,7 @@ symbolTable.addStatement('CLASS', function(parser) {
     this.constructors = [];
 
     if (!parser.advanceIf('BLOCK_START')) {
+        parser.advance('EOL');
         return this;
     }
 
@@ -308,14 +312,25 @@ symbolTable.addStatement('CLASS', function(parser) {
 
         // Constructors, must have the same IDENTIFIER value as the class name
         // abstract ones
-        if (token.is('IDENTIFIER')) {
+        if (token.is('IDENTIFIER') && !parser.peek().is('IDENTIFIER')) {
+
             parser.getDeclaration(token, true, modifiers['abstract'] > 0);
             token.id = 'CONSTRUCTOR';
+
+            // Error out on missnamed constructor
+            if (token.type.value !== this.name) {
+                parser.error(token, 'Constructor function must match name of class,')
+            }
+
             this.constructors.push(token);
 
         } else {
 
-            parser.advance('TYPE');
+            // We expect a type
+            if (!parser.advanceIf('TYPE') && !parser.advanceIf('IDENTIFIER')) {
+                error('Expected either a built-in or user type');
+            }
+
             parser.getDeclaration(token, true, modifiers['abstract'] > 0);
 
             // TODO Variables, abstracts may NOT define a value

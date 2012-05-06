@@ -112,7 +112,7 @@ var OPERATORS = {
     '%':    'MOD',
     '!':    'NOT',
     '.':    'DOT',
-    '@':    'AT',
+    '@':    'MEMBER',
     '[':    'LEFT_BRACKET',
     ']':    'RIGHT_BRACKET',
     '{':    'LEFT_CURLY',
@@ -124,8 +124,7 @@ var OPERATORS = {
 var ASCII_OPERATORS = {
     'is':   'IS',
     'new':  'NEW',
-    'del':  'DELETE',
-    'def':  'DEFINE'
+    'del':  'DELETE'
 };
 
 // These will prevent a block from being openend

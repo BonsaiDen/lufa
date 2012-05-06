@@ -130,13 +130,13 @@ symbolTable.addPrefix('PLUS');
 symbolTable.addPrefix('NOT');
 symbolTable.addPrefix('CAST');
 symbolTable.addPrefix('BIT_NOT');
-symbolTable.addPrefix('AT');
+symbolTable.addPrefix('MEMBER');
 symbolTable.addPrefix('NEW');
 symbolTable.addPrefix('DELETE');
 
 
 // Literals -------------------------------------------------------------------
-var itself = function () {
+var itself = function() {
     return this;
 };
 

@@ -115,8 +115,8 @@ function addAssignment(id) {
 
     return addInfixRight(id, 10, function(parser, left) {
 
-        if (left.not('DOT', 'INDEX', 'RANGE') && left.arity !== 'name') {
-            parser.error(left, 'Bad lvalue.');
+        if (left.not('DOT', 'INDEX', 'RANGE', 'MEMBER') && left.arity !== 'name') {
+            parser.error(left, 'Bad left hand value for assignment,');
         }
 
         this.left = left;

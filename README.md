@@ -36,6 +36,7 @@ still a lot of experimentation going on the the syntax of the language.
     - Default argument for functions
     - Default return for functions(still unsure about this)
     - "setter" args for functions (needs some more thought)
+    - Return statements can be part of expressions?
 
 
 ## Lexer
@@ -60,10 +61,10 @@ still a lot of experimentation going on the the syntax of the language.
 - types (builtin with sub types and user defined types)
 - scope
 - import / export
+- ret
 
 ### TODO
 
-- ret(urn)
 - @ (member access)
 - externs
 - try / catch / finally / raise

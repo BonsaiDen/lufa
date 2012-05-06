@@ -35,6 +35,5 @@ void(int, float) double(list[int] a, hash[User] b):
 void(int, float...) double(list[int] a, hash[User] b...):
     ret hello()
 
-
 int e = +(int)'2' + 3
 
