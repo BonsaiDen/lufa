@@ -44,9 +44,10 @@ Parser.prototype = {
             token = this.__currentToken;
         }
 
-        msg = msg || 'Unexpected token';
-        throw new Error('SyntaxError: ' + msg + ' ' + token.id
-                        + ' at line ' +  token.line + ', col ' + token.col);
+        msg = msg || 'Unexpected token %t';
+        msg = 'SyntaxError: ' + msg + ' at line ' +  token.line + ', col ' + token.col;
+
+        throw new Error(msg.replace('%t', token.id));
 
     },
 
@@ -97,11 +98,11 @@ Parser.prototype = {
         return this.__currentToken;
     },
 
-    advance: function(id) {
+    advance: function(id, errorMessage) {
 
         var token, value;
         if (id && this.__currentToken.not(id)) {
-            this.error(this.__currentToken, 'Expected "' + id + '" but got');
+            this.error(this.__currentToken, errorMessage || ('Expected "' + id + '" but got %t'));
         }
 
         if (this.__currentIndex >= this.__tokens.length) {

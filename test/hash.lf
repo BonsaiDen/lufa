@@ -25,11 +25,11 @@ hash[Admin] admin = { name: 'Ivo', age: 25, partying: true }
 
 # TODO just literals, or expressions?
 map[int, string] numbers = {
-    #1: 'One',
-    #2: 'Two',
-    #3: 'Three'
-    #4: 'Four',
-    #5: 'Five'
+    1: 'One',
+    2: 'Two',
+    3: 'Three',
+    4: 'Four',
+    5: 'Five'
 }
 
 

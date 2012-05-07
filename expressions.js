@@ -127,7 +127,7 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
             var token = parser.get();
 
-            //
+            // A hash value { name: x, foo: y }
             if (token.is('IDENTIFIER')) {
 
                 this.id = 'HASHVALUE';
@@ -150,16 +150,35 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
                 }
 
+            // Parses a map hash construct
             } else {
 
-                this.id = 'MAP';
+                this.id = 'HASHMAP';
+
+                while(true) {
+
+                    token = parser.getExpression(0);
+                    parser.advance('COLON');
+                    token.left = parser.getExpression(0);
+
+                    this.inner.push(token);
+
+                    if (parser.get().not('COMMA')) {
+                        break;
+                    }
+
+                    parser.advance('COMMA');
+
+                }
 
                 console.log(token);
 
             }
 
-
-        // Hash description
+        // Hash type description {
+        //    string name = '',
+        //    int num
+        // }
         } else {
 
             this.id = 'HASHDESC';
@@ -181,7 +200,7 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
     }
 
-    parser.advance('RIGHT_CURLY');
+    parser.advance('RIGHT_CURLY', 'Missing COMMA in HASH literal');
 
     console.log(parser.get());
     this.arity = 'unary';
@@ -204,7 +223,7 @@ symbolTable.addPrefix('LEFT_PAREN', function(parser) {
         var cast = parser.tokenFromSymbol(this);
 
         cast.type = parser.getType(type);
-        parser.advance('RIGHT_PAREN');
+        parser.advance('RIGHT_PAREN', 'Missing closing parenthesis around CAST');
 
         cast.nud(parser);
 
