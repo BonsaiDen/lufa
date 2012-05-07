@@ -21,6 +21,7 @@
   */
 var symbolTable = require('./symbolTable');
 
+
 // Statements -----------------------------------------------------------------
 symbolTable.addStatement('BLOCK_START', function(parser) {
     //new_scope();

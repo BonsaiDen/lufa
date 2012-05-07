@@ -64,10 +64,10 @@ still a lot of experimentation going on the the syntax of the language.
 - import / export
 - ret
 - @ (member access)
+- parsing hashes / maps 
 
 ### TODO
 
-- parsing hashes / maps 
 - externs
 - try / catch / finally / raise
 - package????

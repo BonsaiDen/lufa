@@ -1,6 +1,6 @@
 
 # List comprehensions
-list[int] squares = [i * i for int i in [sort(x) for int x in data]]
+list[int] squares = [i * i for int i in [sort(x) for int x in data] if i % 2]
 
 int i = [1, 2, 3][1]
 string foo = 'hello world'[0::]

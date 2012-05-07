@@ -81,38 +81,49 @@ var OPERATORS = {
     '%=':   'ASSIGN_MOD',
 
     '==':   'EQ',
+    '!=':   'NE',
     '=':    'ASSIGN',
 
     ',':    'COMMA',
     '?':    'HOOK',
     ':':    'COLON',
+
     '||':   'OR',
     '&&':   'AND',
+
     '|':    'BIT_OR',
-    '^':    'BIT_XOR',
     '&':    'BIT_AND',
+    '^':    'BIT_XOR',
     '~':    'BIT_NOT',
+
     '<<':   'LSHIFT',
     '>>>':  'URSHIFT',
     '>>':   'RSHIFT',
+
     '...':  'ELLIPSIS',
-    '!=':   'NE',
+
     '<=':   'LTE',
     '<':    'LT',
     '>=':   'GTE',
     '>':    'GT',
+
     '++':   'INCREMENT',
     '--':   'DECREMENT',
     '+':    'PLUS',
     '-':    'MINUS',
+
     '**':   'EXP',
     '*':    'MUL',
+
     '//':   'DIV_INT',
     '/':    'DIV',
+
     '%':    'MOD',
     '!':    'NOT',
+
     '.':    'DOT',
     '@':    'MEMBER',
+
     '[':    'LEFT_BRACKET',
     ']':    'RIGHT_BRACKET',
     '{':    'LEFT_CURLY',
@@ -197,8 +208,7 @@ function Token() {
     // The plain source version e.g. "'Hello \'World\'!'"
     this.plain = null;
 
-    // The code block this token belongs too
-    this.block = null;
+    this.level = 0;
 
 }
 
@@ -206,12 +216,11 @@ Token.prototype = {
 
     toString: function() {
 
-        var indent = this.block ? this.block.level : 0,
+        var indent = this.level,
             pre = new Array(indent + 1).join('    ');
 
         return pre + '[' + (this.id + '          ').substr(0, 13) + ' '
                 + '' + this.ws.indent + ':' + this.ws.before + ' | B#'
-                + (this.block ? this.block.id : '')
                 + ' T#' + this.nol
                 + ' ' + this.line
                 + ':' + this.col + ' | ' + this.ws.after + ':' + this.ws.trailing
@@ -224,8 +233,7 @@ Token.prototype = {
             col: this.col,
             id: this.id,
             ws: this.ws,
-            value: this.value,
-            block: this.block.id
+            value: this.value
         };
     }
 
@@ -330,7 +338,7 @@ function parse(input, tabWidth, stripComments) {
         t.line = token.line;
         t.col = token.col;
         t.ws = token.ws;
-        t.block = block;
+        t.level = block.level;
 
         list.splice(list.length - 1, 0, t);
 
@@ -346,7 +354,7 @@ function parse(input, tabWidth, stripComments) {
         t.col = prev.col;
         t.value = block;
         t.ws = block.token.ws;
-        t.block = block;
+        t.level = block.level;
 
         var eol = new Token();
         eol.line = prev.line;
@@ -354,7 +362,7 @@ function parse(input, tabWidth, stripComments) {
         eol.id = 'EOL';
         eol.value = 'EOL';
         eol.ws = block.token.ws;
-        eol.block = block;
+        eol.level = block.level;
 
         if (last === true) {
             list.push(t);
@@ -366,7 +374,7 @@ function parse(input, tabWidth, stripComments) {
     }
 
     block.token = token;
-    insertBlockStart(null, block, token);
+    insertBlockStart({ level: 0 }, block, token);
 
     // Grab the inputs
     while (cursor < input.length) {
@@ -622,8 +630,7 @@ function parse(input, tabWidth, stripComments) {
 
             }
 
-            // Assign block reference to every token
-            token.block = block;
+            token.level = block.level;
 
         }
 
@@ -696,19 +703,7 @@ function parse(input, tabWidth, stripComments) {
 
         }
 
-        // TODO re-enable for later use
-        tok.block = null;
-
     }
-
-    // Modify last EOL token to END
-    //var last = list[list.length - 1];
-    //if (last.id !== 'EOL') {
-        //throw new Error('Last token must be EOL.');
-
-    //} else {
-        //last.id = 'END';
-    //}
 
     return list;
 

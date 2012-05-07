@@ -44,6 +44,13 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
                     symbolTable.symbols['FOR'].std.call(this, parser, true);
                     this.id = 'LIST_COMPREHENSION';
 
+                    if (parser.advanceIf('IF')) {
+                        this.condition = parser.getExpression(0);
+
+                    } else {
+                        this.condition = null;
+                    }
+
                 }
 
                 break;
@@ -171,8 +178,6 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
                 }
 
-                console.log(token);
-
             }
 
         // Hash type description {
@@ -202,7 +207,6 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
     parser.advance('RIGHT_CURLY', 'Missing COMMA in HASH literal');
 
-    console.log(parser.get());
     this.arity = 'unary';
     return this;
 
