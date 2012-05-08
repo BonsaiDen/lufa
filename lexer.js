@@ -221,20 +221,9 @@ Token.prototype = {
 
         return pre + '[' + (this.id + '          ').substr(0, 13) + ' '
                 + '' + this.ws.indent + ':' + this.ws.before + ' | B#'
-                + ' T#' + this.nol
-                + ' ' + this.line
+                + ' T#' + this.nol + ' ' + this.line
                 + ':' + this.col + ' | ' + this.ws.after + ':' + this.ws.trailing
                 + '' + ': ' + this.value + ']';
-    },
-
-    toJSON: function() {
-        return {
-            line: this.line,
-            col: this.col,
-            id: this.id,
-            ws: this.ws,
-            value: this.value
-        };
     }
 
 };

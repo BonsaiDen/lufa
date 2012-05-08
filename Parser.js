@@ -32,7 +32,6 @@ function Parser() {
     this.__tokens = null;
     this.__currentToken = null;
     this.__currentIndex = 0;
-    // this.__currentScope = scope; ???
 }
 
 Parser.prototype = {
@@ -92,10 +91,8 @@ Parser.prototype = {
 
     },
 
-    back: function() {
-        this.__currentIndex -= 2;
-        this.__currentToken = this.tokenFromSymbol(this.__tokens[this.__currentIndex]);
-        return this.__currentToken;
+    prev: function() {
+        return this.tokenFromSymbol(this.__tokens[this.__currentIndex - 2]);
     },
 
     advance: function(id, errorMessage) {
@@ -151,6 +148,10 @@ Parser.prototype = {
         var left,
             token = this.__currentToken;
 
+        if (token.checkRight) {
+            token.checkRight(this, this.prev());
+        }
+
         this.advance();
 
         left = token.nud(this);
@@ -158,6 +159,7 @@ Parser.prototype = {
         while(rbp < this.__currentToken.lbp) {
             token = this.__currentToken;
             this.advance();
+
             left = token.led(this, left);
         }
 
@@ -172,7 +174,6 @@ Parser.prototype = {
 
             if (!next.check || next.check(this)) {
 
-                //scope.reserve(next); # TODO scope stuff
                 this.advance();
                 return next.std(this);
 
@@ -181,10 +182,10 @@ Parser.prototype = {
         }
 
         // Make sure this is a valid expression for a statement
-        var exp = this.getExpression(0);
+        var exp = this.getExpression(2);
 
-        if (!this.determineSideEffects(exp)) {
-            this.error(exp, 'Bad expression statement, expected expression with side effect, instead saw');
+        if (!this.validateExpression(exp)) {
+            this.error(exp, 'Bad expression statement, expected expression with side effect, instead saw %t');
         }
 
         this.advance('EOL');
@@ -192,7 +193,7 @@ Parser.prototype = {
 
     },
 
-    determineSideEffects: function(exp) {
+    validateExpression: function(exp) {
 
         // Determine side effects
         var hasSideEffect = false,
@@ -210,7 +211,7 @@ Parser.prototype = {
             }
 
             if (e.left) {
-                hasSideEffect |= this.determineSideEffects(e.left);
+                hasSideEffect |= this.validateExpression(e.left);
             }
 
             // TODO Tenary / bitwise support?
@@ -287,7 +288,7 @@ Parser.prototype = {
                     this.error(dec, 'Declared as abstract but has a value,');
 
                 } else {
-                    dec.right = this.getExpression(0);
+                    dec.right = this.getExpression(2);
                 }
 
             // Function
@@ -450,7 +451,7 @@ Parser.prototype = {
         this.advance('IDENTIFIER');
 
         if (this.advanceIf('ASSIGN')) {
-            param.right = this.getExpression(0);
+            param.right = this.getExpression(2);
 
         } else {
             param.right = null;

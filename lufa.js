@@ -35,7 +35,7 @@ function compile(source) {
 
 function compileFile(file, debug) {
 
-    console.log('Compiling', file);
+    console.log('Parsing', file);
 
     var source = fs.readFileSync(file).toString(),
         tokens = lexer.parse(source, 4, true),
@@ -48,9 +48,13 @@ function compileFile(file, debug) {
     }
 
     var tree = p.parse(tokens);
+
     if (debug) {
         console.log(util.inspect(tree, false, 10));
     }
+
+    //var compress = require('compress-buffer').compress;
+    fs.writeFileSync(file + 'a', util.inspect(tree, false, 10));//'Lufa' + compress(new Buffer(JSON.stringify(tree))));
 
 }
 

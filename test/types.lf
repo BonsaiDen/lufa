@@ -37,3 +37,6 @@ void(int, float...) double(list[int] a, hash[User] b...):
 
 int e = +(int)'2' + 3
 
+if i is User:
+    foo()
+

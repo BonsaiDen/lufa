@@ -104,7 +104,7 @@ symbolTable.addStatement('FROM', function(parser) {
 symbolTable.addStatement('RETURN', function(parser) {
 
     this.arity = 'return';
-    this.left = parser.getExpression(0);
+    this.left = parser.getExpression(2);
 
     parser.advance('EOL');
     return this;
@@ -118,7 +118,7 @@ symbolTable.addStatement('WHILE', function(parser) {
 
     this.arity = 'loop';
 
-    this.condition = parser.getExpression(0);
+    this.condition = parser.getExpression(2);
     parser.advance('COLON', 'Expected COLON after while loop header');
 
     this.body = parser.getBody();
@@ -178,7 +178,7 @@ symbolTable.addStatement('FOR', function(parser, isComprehension) {
     parser.advance('IN', 'Expected IN of forin loop to separate indexes and iterator');
 
     // The expression which serves as the iterator
-    this.iterator = parser.getExpression(0);
+    this.iterator = parser.getExpression(2);
 
     // List comprehensions do not have a COLON or a body
     if (!isComprehension) {
@@ -199,7 +199,7 @@ symbolTable.addStatement('FOR', function(parser, isComprehension) {
 symbolTable.addStatement('IF', function(parser) {
 
     // Grab the initial expression and setup memebers
-    this.condition = parser.getExpression(0);
+    this.condition = parser.getExpression(2);
     parser.advance('COLON', 'Expected COLON after if condition');
 
     this.branches = [];
@@ -217,7 +217,7 @@ symbolTable.addStatement('IF', function(parser) {
         }
 
         // ELIF condition
-        elif.condition = parser.getExpression(0);
+        elif.condition = parser.getExpression(2);
         parser.advance('COLON', 'Expected COLON after elif condition');
 
         // Grab the block, if it exists
@@ -278,6 +278,7 @@ symbolTable.addStatement('CLASS', function(parser) {
     this.members = [];
     this.methods = [];
     this.constructors = [];
+    this.destructor = null;
 
     if (!parser.advanceIf('BLOCK_START')) {
         parser.advance('EOL');
@@ -297,6 +298,8 @@ symbolTable.addStatement('CLASS', function(parser) {
             'abstract': 0
         };
 
+        var hasAnyModifiers = false;
+
         while(true) {
 
             if (!parser.get().is('MODIFIER')) {
@@ -304,6 +307,7 @@ symbolTable.addStatement('CLASS', function(parser) {
             }
 
             modifiers[parser.get().value]++;
+            hasAnyModifiers = true;
             parser.advance('MODIFIER');
 
         }
@@ -311,19 +315,49 @@ symbolTable.addStatement('CLASS', function(parser) {
         // Grab actual start of member
         var token = parser.get();
 
-        // Constructors, must have the same IDENTIFIER value as the class name
-        // abstract ones
+        // Error out on obvious syntax errors
         if (token.is('IDENTIFIER') && !parser.peek().is('IDENTIFIER')) {
+            parser.error(token, 'Ambigous syntax in CLASS, missing either new or del to identify con-/destructor');
 
-            parser.getDeclaration(token, true, modifiers['abstract'] > 0);
+        // Constructors
+        } else if (token.is('NEW')) {
+
+            token = parser.advance('NEW');
+
+            if (hasAnyModifiers) {
+                parser.error(token, 'Constructor cannot have modifiers');
+            }
+
+            parser.getDeclaration(token, true, false);
             token.id = 'CONSTRUCTOR';
 
-            // Error out on missnamed constructor
             if (token.type.value !== this.name) {
                 parser.error(token, 'Constructor function must match name of class,');
             }
 
             this.constructors.push(token);
+
+        // Destructors
+        } else if (token.is('DELETE')) {
+
+            token = parser.advance('DELETE');
+
+            if (hasAnyModifiers) {
+                parser.error(token, 'Destructor cannot have modifiers');
+            }
+
+            parser.getDeclaration(token, true, modifiers['abstract'] > 0);
+            token.id = 'DESTRUCTOR';
+
+            if (token.type.value !== this.name) {
+                parser.error(token, 'Destructor function must match name of class,');
+            }
+
+            if (this.destructor) {
+                parser.error('Class already has a destructor but defined another one');
+            }
+
+            this.destructor = token;
 
         } else {
 

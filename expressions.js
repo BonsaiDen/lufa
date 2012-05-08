@@ -33,7 +33,7 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
 
         while (true) {
 
-            elements.push(parser.getExpression(0));
+            elements.push(parser.getExpression(2));
 
             if (parser.tokenNot('COMMA')) {
 
@@ -45,7 +45,7 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
                     this.id = 'LIST_COMPREHENSION';
 
                     if (parser.advanceIf('IF')) {
-                        this.condition = parser.getExpression(0);
+                        this.condition = parser.getExpression(2);
 
                     } else {
                         this.condition = null;
@@ -96,7 +96,7 @@ symbolTable.addInfix('LEFT_BRACKET', 20, function(parser, left) {
             this.inner.push(null);
 
         } else {
-            this.inner.push(parser.getExpression(0));
+            this.inner.push(parser.getExpression(2));
         }
 
         if (parser.tokenNot('COLON')) {
@@ -145,7 +145,7 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
                     parser.advance('IDENTIFIER');
                     parser.advance('COLON');
-                    token.left = parser.getExpression(0);
+                    token.left = parser.getExpression(2);
 
                     this.inner.push(token);
 
@@ -164,9 +164,9 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
                 while(true) {
 
-                    token = parser.getExpression(0);
+                    token = parser.getExpression(2);
                     parser.advance('COLON');
-                    token.left = parser.getExpression(0);
+                    token.left = parser.getExpression(2);
 
                     this.inner.push(token);
 
@@ -238,7 +238,7 @@ symbolTable.addPrefix('LEFT_PAREN', function(parser) {
         // Simple wrapping around expressions
         var e;
         if (parser.tokenNot('RIGHT_PAREN')) {
-            e = parser.getExpression(0);
+            e = parser.getExpression(2);
 
         } else {
             parser.error('Expected expression but got');
@@ -250,6 +250,27 @@ symbolTable.addPrefix('LEFT_PAREN', function(parser) {
     }
 
 });
+
+
+// Inline types for IS operator -----------------------------------------------
+// ----------------------------------------------------------------------------
+symbolTable.addSymbol('TYPE').nud = function(parser) {
+    this.arity = 'type';
+    return this;
+};
+
+// Make sure the only allowe expression is "(expression) is (type)"
+symbolTable.addSymbol('TYPE').checkRight = function(parser, right) {
+
+    if (right.not('IS')) {
+        parser.error(this, 'TYPE cannot be used in expression expect with the IS operator');
+    }
+
+};
+
+symbolTable.addSymbol('TYPE').checkLeft = function(parser, left) {
+    parser.error(this, 'TYPE cannot be used in expression expect with the IS operator');
+};
 
 
 // Calls ----------------------------------------------------------------------
@@ -290,7 +311,7 @@ symbolTable.addInfix('LEFT_PAREN', 19, function(parser, left) {
     if (parser.tokenNot('RIGHT_PAREN')) {
         while (true) {
 
-            params.push(parser.getExpression(0));
+            params.push(parser.getExpression(2));
 
             if (parser.tokenNot('COMMA')) {
                 break;

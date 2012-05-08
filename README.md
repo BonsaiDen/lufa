@@ -65,9 +65,13 @@ still a lot of experimentation going on the the syntax of the language.
 - ret
 - @ (member access)
 - parsing hashes / maps 
+- spread via ...
+- new / del as constructor / destructor in classes
 
 ### TODO
 
+- multi assignment with ,
+- fix type tokens in expressions being usable outside of is operator
 - externs
 - try / catch / finally / raise
 - package????

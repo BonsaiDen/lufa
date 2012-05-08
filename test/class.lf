@@ -4,11 +4,11 @@ class Cat extends Animal:
     abstract private int age
     private string color = 'gray'
 
-    Cat(string name = 'Kitty', int age = 2):
+    new Cat(string name = 'Kitty', int age = 2):
         @name = name
         @age = age
 
-    Cat(string color = 'blue'):
+    del Cat(string color = 'blue'):
         @color = color
 
     # TODO destructor syntax
@@ -31,7 +31,7 @@ class Animal:
     
     int foo = 2
 
-    Animal(int foo):
+    new Animal(int foo):
         @foo = a
 
     void say(string message):

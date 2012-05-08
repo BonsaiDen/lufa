@@ -23,7 +23,7 @@ var symbolTable = {};
 var baseSymbol = {
 
     nud: function (parser) {
-        parser.error(this, 'Invalid expression, most likely a statement token:');
+        parser.error(this, 'Invalid expression, token %t not usable in expression');
     },
 
     led: function (parser, left) {
@@ -74,6 +74,11 @@ function addInfix(id, bp, led) {
     s.led = led || function(parser, left) {
         this.left = left;
         this.right = parser.getExpression(bp);
+
+        if (left.checkLeft) {
+            left.checkLeft(parser, this);
+        }
+
         this.arity = 'binary';
         delete this.value;
         return this;
@@ -101,7 +106,6 @@ function addPrefix(id, nud, precedence) {
 
     var s = addSymbol(id);
     s.nud = nud || function(parser) {
-        //scope.reserve(this); # TODO re-enable
         this.left = parser.getExpression(18);
         this.arity = 'unary';
         return this;
@@ -113,14 +117,14 @@ function addPrefix(id, nud, precedence) {
 
 function addAssignment(id) {
 
-    return addInfixRight(id, 2, function(parser, left) {
+    return addInfixRight(id, 4, function(parser, left) {
 
         if (left.not('DOT', 'INDEX', 'RANGE', 'MEMBER') && left.arity !== 'name') {
             parser.error(left, 'Bad left hand value for assignment,');
         }
 
         this.left = left;
-        this.right = parser.getExpression(1);
+        this.right = parser.getExpression(0);
         this.isAssignment = true;
         this.arity = 'binary';
 

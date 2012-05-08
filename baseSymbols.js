@@ -52,42 +52,44 @@ symbolTable.addInfix('DIV_INT', 15);
 symbolTable.addInfix('EXP', 15);
 symbolTable.addInfix('MOD', 15);
 
-symbolTable.addInfix('PLUS', 13);
-symbolTable.addInfix('MINUS', 13);
+symbolTable.addInfix('PLUS', 14);
+symbolTable.addInfix('MINUS', 14);
 
-symbolTable.addInfix('RSHIFT', 12);
-symbolTable.addInfix('LSHIFT', 12);
-symbolTable.addInfix('URSHIFT', 12);
+symbolTable.addInfix('RSHIFT', 13);
+symbolTable.addInfix('LSHIFT', 13);
+symbolTable.addInfix('URSHIFT', 13);
 
-symbolTable.addInfix('LT', 10);
-symbolTable.addInfix('LTE', 10);
-symbolTable.addInfix('GT', 10);
-symbolTable.addInfix('GTE', 10);
-symbolTable.addInfix('IN', 10);
-symbolTable.addInfix('IS', 10);
-symbolTable.addInfix('ELLIPSIS', 10);
+symbolTable.addInfix('LT', 12);
+symbolTable.addInfix('LTE', 12);
+symbolTable.addInfix('GT', 12);
+symbolTable.addInfix('GTE', 12);
+symbolTable.addInfix('IN', 12);
+symbolTable.addInfix('ELLIPSIS', 12);
+symbolTable.addInfix('IS', 11); // validate expressions in compiler
 
-symbolTable.addInfix('EQ', 9);
-symbolTable.addInfix('NE', 9);
+symbolTable.addInfix('EQ', 11);
+symbolTable.addInfix('NE', 11);
 
-symbolTable.addInfix('BIT_AND', 8);
-symbolTable.addInfix('BIT_XOR', 7);
-symbolTable.addInfix('BIT_OR', 6);
+symbolTable.addInfix('BIT_AND', 10);
+symbolTable.addInfix('BIT_XOR', 9);
+symbolTable.addInfix('BIT_OR', 8);
 
 // Shortcircuit Operators -----------------------------------------------------
-symbolTable.addInfixRight('AND', 5);
-symbolTable.addInfixRight('OR', 5);
+symbolTable.addInfixRight('AND', 7);
+symbolTable.addInfixRight('OR', 7);
+
+//symbolTable.addInfix('COMMA', 1);
 
 
 // Ternary Operator -----------------------------------------------------------
-symbolTable.addInfix('HOOK', 3, function(parser, left) {
+symbolTable.addInfix('HOOK', 5, function(parser, left) {
 
     this.left = left;
-    this.right = parser.getExpression(0);
+    this.right = parser.getExpression(2);
     this.id = 'TERNARY';
     parser.advance('COLON');
 
-    this.third = parser.getExpression(0);
+    this.third = parser.getExpression(2);
     this.arity = 'ternary';
     return this;
 
@@ -128,6 +130,7 @@ symbolTable.addPrefix('INCREMENT');
 symbolTable.addPrefix('DECREMENT');
 symbolTable.addPrefix('MINUS');
 symbolTable.addPrefix('PLUS');
+symbolTable.addPrefix('ELLIPSIS');
 symbolTable.addPrefix('NOT');
 symbolTable.addPrefix('CAST');
 symbolTable.addPrefix('BIT_NOT');
