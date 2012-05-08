@@ -44,7 +44,6 @@ var KEYWORDS = {
     'finally': 'FINALLY',
     'raise': 'RAISE',
     'for': 'FOR',
-    'in': 'IN',
     'while': 'WHILE',
     'scope': 'SCOPE',
     'ret': 'RETURN',
@@ -133,6 +132,8 @@ var OPERATORS = {
 };
 
 var ASCII_OPERATORS = {
+    'has': 'HAS',
+    'in': 'IN',
     'is':   'IS',
     'new':  'NEW',
     'del':  'DELETE'

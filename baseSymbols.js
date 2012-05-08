@@ -64,6 +64,7 @@ symbolTable.addInfix('LTE', 12);
 symbolTable.addInfix('GT', 12);
 symbolTable.addInfix('GTE', 12);
 symbolTable.addInfix('IN', 12);
+symbolTable.addInfix('HAS', 12);
 symbolTable.addInfix('ELLIPSIS', 12);
 symbolTable.addInfix('IS', 11); // validate expressions in compiler
 

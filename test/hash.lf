@@ -32,6 +32,12 @@ map[int, string] numbers = {
     5: 'Five'
 }
 
+hash a = {
+    string data,
+    int number
+}
+
+hash[a] foo = (hash[a]){ number: 4} + (hash[a]){ data: 'foo'}
 
 str = numbers[1] # map it
 num = numbers[:'One'] # we can map either way

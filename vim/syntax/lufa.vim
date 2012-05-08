@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:	lufa
 " Maintainer:	Ivo Wetzel
-" Last Change:	06.05.2012
+" Last Change:	08.05.2012
 
 " tuning parameters:
 
@@ -30,14 +30,14 @@ syn match   lufaNumber              "\-\=\<\%([1-9]\d*\|0\)\>"
 syn region  lufaRegexpString         start=+/[^/*]+me=e-1 skip=+\\\\\|\\/+ end=+/[gi]\{0,2\}\s*$+ end=+/[gi]\{0,2\}\s*[;.,)\]}]+me=e-1 contains=@htmlPreproc oneline
 
 syn match   lufaThis                /@\%(\I\i*\)\?/
-syn keyword lufaKeyword             class extends
-syn keyword lufaBlock               if elif else try catch finally raise for in while next
-syn keyword lufaAsciiOperator	    new del is scope
+syn keyword lufaKeyword             class extends package extern
+syn keyword lufaBlock               if elif else try catch finally raise for in while scope ret
+syn keyword lufaAsciiOperator	    new del is 
 syn keyword lufaType		    void bool int float string list map hash
-syn keyword lufaBoolNull	    true false null
+syn keyword lufaBoolean             true false
+syn keyword lufaNull                null
 
-syn keyword lufaDefine              def
-syn keyword lufaModifier	    const static abstract public protected private outer extern class package
+syn keyword lufaModifier	    const static abstract public protected private outer
 syn keyword lufaModule              from import as export 
 
 syn match   lufaBraces	            "[{}\[\]]"
@@ -72,10 +72,8 @@ if version >= 508 || !exists("did_lufa_syn_inits")
   HiLink lufaError		    Error
   HiLink lufaAsciiOperator	    Operator
   HiLink lufaType		    Type
-  HiLink lufaBoolNull	            Number
   HiLink lufaKeyword	            Keyword
   HiLink lufaModifier	            Keyword
-  HiLink lufaDefine                 Type
   HiLink lufaModule                 Member
 
   HiLink lufaNumber		    Number

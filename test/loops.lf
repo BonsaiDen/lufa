@@ -5,6 +5,9 @@ while true:
             print()
 
 for int i in 0...10:
-    for int e in a...b:
+    for int e in i * 2 ... i * 4:
         print(i, e)
 
+
+for int number in integers:
+    
