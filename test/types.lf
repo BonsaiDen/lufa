@@ -22,12 +22,15 @@ map[int, e] e
 # function types
 void(int, float) double
 
-void(int, float) double(int a, int b):
+const void(int, float) double(int a, int b):
     
     void foo(int bar, float fux):
         ret bar * fux
 
     ret foo
+
+void(const int, float) double(const int a, int b):
+    ret
 
 void(int, float) double(list[int] a, hash[User] b):
     ret hello() + 2
@@ -39,4 +42,7 @@ int e = +(int)'2' + 3
 
 if i is User:
     foo()
+
+User e = (User)e
+const int days = 0
 

@@ -28,6 +28,7 @@ symbolTable.addStatement('IDENTIFIER', function(parser) {
 
 }, function(parser) {
     // only run IDENTIFIERs as statements if the next token is also an IDENTIFIER
+    // this ensure that we parse User types but still correctly handle normal names
     return parser.peek().is('IDENTIFIER');
 });
 
@@ -104,7 +105,9 @@ symbolTable.addStatement('FROM', function(parser) {
 symbolTable.addStatement('RETURN', function(parser) {
 
     this.arity = 'return';
-    this.left = parser.getExpression(2);
+    if (parser.get().not('EOL')) {
+        this.left = parser.getExpression(2);
+    }
 
     parser.advance('EOL');
     return this;
@@ -256,10 +259,25 @@ symbolTable.addStatement('ELSE', function(parser) {
 });
 
 
-
 // Classes --------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-symbolTable.addSymbol('MODIFIER');
+symbolTable.addStatement('MODIFIER', function(parser) {
+
+    // This handles const modifiers in front of declarations
+    if (this.value !== 'const') {
+        parser.error('Unexpected MODIFIER ' + this.value);
+    }
+
+    var dec = parser.getStatement();
+    if (dec.arity !== 'declaration') {
+        parser.error('Expected declaration after const modifier');
+    }
+
+    dec.isConst = true;
+    return dec;
+
+});
+
 symbolTable.addSymbol('EXTENDS');
 symbolTable.addStatement('CLASS', function(parser) {
 

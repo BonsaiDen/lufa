@@ -12,6 +12,7 @@ string foo = 'hello world'[::-1]
 list[int] i = [1, 2, 3, 4]
 i[1:2] = [3, 2]
 
-test(...i) # spread
+test(...i) # spread works for both arrays and objects
 
 #a, b = b, a
+

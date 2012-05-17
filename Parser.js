@@ -402,6 +402,20 @@ Parser.prototype = {
 
             while(true) {
 
+                // Check for keyword
+                var mod = this.get(),
+                    isConstant = false;
+
+                if (this.advanceIf('MODIFIER')) {
+
+                    if (mod.value !== 'const') {
+                        this.error('Unexpected MODIFIER ' + mod.value);
+                    }
+
+                    isConstant = true;
+
+                }
+
                 // For signature definitions
                 var param;
                 if (typeOnly) {
@@ -416,6 +430,8 @@ Parser.prototype = {
                     param = this.getParamPair(this.get());
                     params.push(param);
                 }
+
+                param.isConst = isConstant;
 
                 // Var args like (int b...) method will then receive a list
                 if (this.advanceIf('ELLIPSIS')) {
