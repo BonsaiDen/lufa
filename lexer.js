@@ -456,7 +456,7 @@ function parse(input, tabWidth, stripComments) {
             token.id = 'STRING';
             token.plain = m[0];
 
-            // simpelst way to get the actual js string value.
+            // simplest way to get the actual js string value.
             // Don't beat me, taken straight from narcissus :O
             token.value = eval(m[0]);
 
