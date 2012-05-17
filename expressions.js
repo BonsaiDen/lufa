@@ -217,10 +217,11 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 // ----------------------------------------------------------------------------
 symbolTable.addPrefix('LEFT_PAREN', function(parser) {
 
-    var type = parser.get();
+    var type = parser.get(),
+        next = parser.peek();
 
     // Type casts
-    if (parser.advanceIf('TYPE')) {
+    if (parser.advanceIf('TYPE') || (parser.advanceIf('IDENTIFIER') && next.id === 'RIGHT_PAREN')) {
 
         // Convert into a CAST token
         this.id = 'CAST';
