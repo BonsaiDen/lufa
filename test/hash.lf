@@ -2,7 +2,7 @@ e = 1 + 2
 
 # a hash defintion
 hash User = {
-    string name,
+    const string name,
     int age,
     string favoriteColor = 'blue' # hashes support defaults too
 }
@@ -37,7 +37,7 @@ hash a = {
     int number
 }
 
-hash[a] foo = (hash[a]){ number: 4} + (hash[a]){ data: 'foo'}
+hash[a] foo = (hash[a]){ number: 4 } + (hash[a]){ data: 'foo' }
 
 str = numbers[1] # map it
 num = numbers[:'One'] # we can map either way

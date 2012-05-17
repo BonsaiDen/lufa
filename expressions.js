@@ -157,10 +157,10 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
                 }
 
-            // Parses a map hash construct
+            // Parses a map construct
             } else {
 
-                this.id = 'HASHMAP';
+                this.id = 'MAPVALUE';
 
                 while(true) {
 
@@ -190,8 +190,24 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
             while(true) {
 
+                var mod = parser.get(),
+                    isConstant = false;
+
+                if (parser.advanceIf('MODIFIER')) {
+
+                    if (mod.value !== 'const') {
+                        parser.error('Unexpected MODIFIER ' + mod.value);
+                    }
+
+                    isConstant = true;
+
+                }
+
                 parser.advance();
-                this.inner.push(parser.getDeclaration(parser.get(), true, false, true));
+
+                var dec = parser.getDeclaration(parser.get(), true, false, true);
+                dec.isConst = isConstant;
+                this.inner.push(dec);
 
                 if (parser.get().not('COMMA')) {
                     break;
