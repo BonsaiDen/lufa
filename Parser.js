@@ -173,17 +173,14 @@ Parser.prototype = {
         if (next.std) {
 
             if (!next.check || next.check(this)) {
-
                 this.advance();
                 return next.std(this);
-
             }
 
         }
 
         // Make sure this is a valid expression for a statement
         var exp = this.getExpression(2);
-
         if (!this.validateExpression(exp)) {
             this.error(exp, 'Bad expression statement, expected expression with side effect, instead saw %t');
         }

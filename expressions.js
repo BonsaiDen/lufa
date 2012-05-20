@@ -110,6 +110,10 @@ symbolTable.addInfix('LEFT_BRACKET', 20, function(parser, left) {
     parser.advance('RIGHT_BRACKET');
 
     this.id = this.inner.length > 1 ? 'RANGE' : 'INDEX';
+    if (this.id === 'INDEX') {
+        this.inner = this.inner[0];
+    }
+
     this.arity = 'binary';
 
     return this;
