@@ -10,8 +10,13 @@ a = a * 2 / b
 a = (int)'1'
 a = -2
 
-e = l.b['test']
+e = b['test']
 
+f = e.t + 2
+
+@foo.id = 10
+
+a.b.c = 2
 ++a
 --a
 #b++

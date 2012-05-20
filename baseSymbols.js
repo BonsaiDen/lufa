@@ -105,7 +105,7 @@ symbolTable.addInfix('DOT', 20, function(parser, left) {
         parser.error(parser.get(), 'Expected a property name.');
     }
 
-    parser.get().arity = 'literal';
+    parser.get().arity = 'property';
     this.right = parser.get();
     this.arity = 'binary';
     parser.advance();

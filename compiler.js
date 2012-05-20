@@ -1,3 +1,227 @@
+
+function Scope(parent, body, base) {
+    this.__base = base || null;
+    this.__parent = parent || null;
+
+    // This includes class members and methods
+    this.__members = {};
+
+    // All other functions and variables
+    // these are the result of declarations and paramters
+    this.__names = {};
+
+    this.parse(body);
+
+}
+
+// TODO validate use of possible uniniliazed values
+// TODO check for assignments on const vars
+Scope.prototype = {
+
+    parse: function(body) {
+
+        for(var i = 0, l = body.length; i < l; i++) {
+
+            var exp = body[i];
+            if (exp.arity === 'declaration') {
+
+                if (exp.id === 'FUNCTION') {
+                    // create sub scope for this function
+
+                } else if (exp.id === 'CLASS') {
+                    // create sub scope for this class
+                    new Scope(this, exp); // TODO ???
+
+                // Just define a name
+                } else {
+
+                }
+
+            }
+
+        }
+
+    },
+
+
+};
+
+
+// TODO
+//
+// TODO
+// There are two ways to parse this:
+//
+//  top down first, so for each scope go in each sub scope and resolve the things in there
+//
+//  or level first, so for each scope figure out all new scopes and parse them after all scopes on the current level have been finished
+//
+// TODO also try to build the data in here in a way that the code-gen can use without doing another run over it
+function FunctionScope(exp) {
+
+    // Go through all params and define them as names
+    // TODO disallow non primitives in expressions here? So only literals are valid and names are not?
+
+    // Go through body and parse statements
+
+
+}
+
+function ClassScope(exp) {
+
+    // Go through all members and define them as members
+
+
+    // Go through all methods and define them as members
+
+
+}
+
+ClassScope.prototype = {
+
+    defineMember: function(member) {
+
+        if (this.__members.hasOwnProperty(member.value)) {
+            this.error(this.__members[member.value], 'Member with name "' + member.value + '" already defined in current class.');
+
+        } else {
+            this.__members[name.value] = name;
+        }
+
+    },
+
+    resolveMember: function(member) {
+
+        // Go up until we find a parent scope that defines a base
+        if (!this.__base) {
+
+            if (this.__parent) {
+                return this.__parent.resolveMember(member);
+
+            } else {
+                this.error(member, 'Access of member "%t" in non-class construct.');
+            }
+
+        // If we end up here, we should have a base and members
+        } if (this.__members.hasOwnProperty(member.value)) {
+            return this.members[member.value];
+
+        // TODO go up through parent classes later in a later compile step
+        } else {
+            this.error(member, 'Member "%t" not found in class "' + this.__base.name + '".');
+        }
+
+    }
+
+};
+
+function BaseScope(base, statements) {
+    // The base this scope belongs too, either the top level scope of a module or the class scope inside a class
+    // TODO this is used to resolve stuff???
+    this.__base = base;
+}
+
+BaseScope.prototype = {
+
+    parseStatements: function(statements) {
+
+        for(var i = 0, l = body.length; i < l; i++) {
+
+            var exp = body[i];
+            if (exp.arity === 'declaration') {
+
+                if (exp.id === 'FUNCTION') {
+                    // create sub scope for this function
+
+                } else if (exp.id === 'CLASS') {
+                    // create sub scope for this class
+                    new Scope(this, exp); // TODO ???
+
+                // Just define a name
+                } else {
+
+                }
+
+            }
+
+        }
+
+    },
+
+    handle_ASSIGN: function(exp) {
+
+    },
+
+    handle_FUNCTION: function(exp) {
+        // define the .name in this scope
+        // create a new FunctionScope
+    },
+
+    handle_CLASS: function(exp) {
+
+    },
+
+    defineName: function(name) {
+
+        if (this.__names.hasOwnProperty(name.value)) {
+            // TODO show both locations? Or just previous defintion?
+            this.error(name, 'Variable with name "' + name.value + '" already defined in current scope.');
+
+        } else {
+            this.__names[name.value] = name;
+        }
+
+    },
+
+    resolveName: function(name) {
+
+        if (this.__names.hasOwnProperty(name.value)) {
+            return this.__names[name.value];
+
+        } else if (this.__parent) {
+            return this.__parent.resolveName(name);
+
+        } else {
+            this.error(name, 'Access of undefined variable "%t".');
+        }
+
+    },
+
+    error: function(token, msg) {
+
+        if (typeof token === 'string') {
+            msg = token;
+            token = this.__currentToken;
+        }
+
+        msg = msg || 'Undefined %t';
+        msg = 'CompileError: ' + msg + ' at line ' +  token.line + ', col ' + token.col;
+
+        throw new Error(msg.replace('%t', token.value));
+
+    }
+
+};
+
+
+
+// Compiler thing -------------------------------------------------------------
+// ----------------------------------------------------------------------------
+function Compiler(ast) {
+    this.__ast = ast;
+    this.__scope = new Scope(null);
+}
+
+Compiler.prototype = {
+
+
+};
+
+
+
+
+
+
 // Lists need to validate all sub types
 // maps needs to validate all sub types
 // hashes need to validate all keys to be compatible?
@@ -156,26 +380,6 @@ var unaryOperatorTable = {
 
 };
 
-function Scope(parent) {
-    this.parent = parent;
-    this.members = {};
-}
-
-Scope.prototype = {
-
-    resolveName: function(name) {
-        if (this.members.hasOwnProperty(name)) {
-            return this.members[name];
-        }
-    },
-
-    body: function() {
-        // go through all statements
-        // and expressions
-        // check assignments and calls
-    }
-
-};
 
 // Type class, needed, otherwise this will become a giant mess.
 function Type() {
@@ -227,13 +431,24 @@ function resolveUnary(op, a) {
 
 }
 
+// TODO really complicated stuff will be the resolving of class methods
 function resolveType(exp) {
 
+    // TODO the compiler will also need to support branching prediction to a certain level...
+    // but most of these issues should be resolved by the hard scoping and typing
     var leftType, rightType, result, indexType, startType, endType, stepType;
 
     // Plain literals
     if (exp.arity === 'literal') {
-        return exp.id;
+
+        // In case of plain stuff return the id
+        if (exp.id !== 'IDENTIFIER') {
+            return exp.id.toLowerCase();
+
+        // In case of DOT accessors we need to do some more magic
+        } else {
+
+        }
 
     // Names
     } else if (exp.arity === 'name') {
@@ -285,20 +500,47 @@ function resolveType(exp) {
                 endType = resolveType(exp.inner[2]);
             }
 
-        }
+        } else if (exp.id === 'DOT') {
 
-        // Look up table to figure out if this will work
-        result = resolveBinary(op, leftType, rightType);
+            if (!leftType.contains(rightType)) {
+                // TODO throw error about right being not a member of left
+            }
+
+            return; // TODO return the new subtype of the DOT expression so b in case of a.b
+
+            // TODO check if right is contained in left
+
+            // TODO grab the left side and resolve the VARIABLE name and type
+            // then grab the right and figure out if it exists in left
+
+        // Normal operations
+        } else {
+            // Look up table to figure out if this will work
+            result = resolveBinary(op, leftType, rightType);
+        }
 
         return result;
 
     // Unaries
     } else if (exp.arity === 'unary') {
-        leftType = resolveType(exp.left);
 
-        result = resolveBinary(exp.id, leftType);
+        if (exp.id === 'MEMBER') {
 
-        return result;
+            scope.resolveMember(exp.left); // TODO figure out how to make it work...
+
+            // TODO resolve left side first then return that type
+
+            // TODO we also need to look up against the currents class members
+            // instead of looking for the normal variable
+
+        } else {
+
+            leftType = resolveType(exp.left);
+            result = resolveBinary(exp.id, leftType);
+            return result;
+
+        }
+
     }
 
 }

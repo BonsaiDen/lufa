@@ -1,0 +1,21 @@
+
+list[int] array
+list[string] array
+
+int test = 0
+
+
+void test(string name, const int num = 2):
+    num = 3
+    name = 'test'
+
+    void level3(string name):
+        int l3
+        num = 5
+
+void hello():
+    name = 2
+
+class Base:
+    
+    int id = 0
