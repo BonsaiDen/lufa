@@ -249,7 +249,14 @@ Parser.prototype = {
 
         var token = this.__currentToken;
         if (this.advanceIf('BLOCK_START')) {
-            return token.std(this);
+
+            var block = token.std(this);
+            if (Array.isArray(block)) {
+                return block;
+
+            } else {
+                return [block];
+            }
 
         } else {
             return null;

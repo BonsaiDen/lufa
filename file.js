@@ -22,6 +22,7 @@ function Scope(base, parent, node) {
     this.parent = parent || null;
     this.node = node;
     this.tree = node;
+
     this.names = {};
 
     this.errors = [];
@@ -33,6 +34,8 @@ function Scope(base, parent, node) {
     // Expressions which need to be validated later on
     this.expressions = [];
 
+    this.type = 'block';
+
 }
 
 Scope.prototype = {
@@ -40,13 +43,20 @@ Scope.prototype = {
     // Run over the top level of the tree and parse all statements
     compile: function() {
 
-        console.log('compiling scope on level', this.level);
+        var returned = false,
+            node = null;
 
+        console.log(this.tree);
         for(var i = 0, l = this.tree.length; i < l; i++) {
 
-            var node = this.tree[i];
+            if (returned) {
+                this.error(node, this.tree[i], 'Dead code after return statement at %pos, %oinfo at %opos is never reached.');
+                break;
+            }
+
+            node = this.tree[i];
             if (this['compile_' + node.id]) {
-                this['compile_' + node.id](node);
+                returned |= this['compile_' + node.id](node);
 
             } else {
                 this.compileExpression(node);
@@ -54,18 +64,16 @@ Scope.prototype = {
 
         }
 
-        console.log('Names:', this.getNames());
-
-        console.log('Errors:');
+        console.log('Scope on level', this.level, 'names:', this.getNames());
         for(var i = 0, l = this.errors.length; i < l; i++) {
-            console.log('-', this.errors[i]);
+            console.log('   Error:', this.errors[i]);
         }
 
         return this.subScopes;
 
     },
 
-    // Compile all the sub scopes, level per level
+    // compile all the sub scopes, level per level
     compileSubScopes: function() {
 
         var subs = this.subScopes;
@@ -75,7 +83,7 @@ Scope.prototype = {
             subs = [];
             for(var i = 0, l = subScopes.length; i < l; i++) {
 
-                // Compile the sub scope and append its sub scopes into the list for the next level
+                // compile the sub scope and append its sub scopes into the list for the next level
                 subs.push.apply(subs, subScopes[i].compile());
 
             }
@@ -95,23 +103,77 @@ Scope.prototype = {
         this.subScopes.push(new FunctionScope(this.base, this, func));
     },
 
+    compile_IF: function(iff) {
+
+        if (iff.body) {
+            this.subScopes.push(new Scope(this.base, this, iff.body));
+        }
+
+        for(var i = 0, l = iff.branches.length; i < l; i++) {
+            if (iff.branches[i].body) {
+                this.subScopes.push(new Scope(this.base, this, iff.branches[i].body));
+            }
+        }
+
+    },
+
     compile_CLASS: function(clas) {
-        //console.log('class', clas);
+        this.defineName(clas);
+        this.subScopes.push(new ClassScope(this.base, this, clas));
     },
 
     compile_ASSIGN: function(assign) {
         //console.log('assign', assign);
     },
 
+    compile_RETURN: function(ret) {
+
+        // go up scope and find the matching function
+        var scope = this;
+        while((scope = scope.parent)) {
+            if (scope.type === 'function') {
+                console.log('found function for return:', ret, this.getType(scope.node));
+                // TODO check return type
+                break;
+            }
+        }
+
+        if (scope === null) {
+            this.error(ret, null, 'Return statement outside of function at %pos.');
+        }
+
+        return true;
+
+    },
+
+    compile_IMPORT: function(imp) {
+
+        for(var i = 0, l = imp.names.length; i < l; i++) {
+
+            var name = imp.names[i];
+            if (name.as) {
+                this.defineName(name.as);
+
+            } else {
+                this.defineName(name);
+            }
+
+        }
+    },
+
     compileExpression: function(exp) {
         //console.log('expression', exp);
     },
 
-    // Define and resolve names
     defineName: function(node) {
 
         if (this.names.hasOwnProperty(node.name)) {
-            this.error(node, this.names[node.name], 'A variable called "%name" was already defined in current scope at %opos as type of %otype, but %pos tries to redefine it as type of %type.');
+            var name = this.names[node.name];
+            this.error(node, name, 'A variable called "%name" was already '
+                                    + (name.isImport ? 'imported into the' : 'defined in the')
+                                    + ' current scope at %opos as type of %otype, but %pos tries to '
+                                    + (node.isImport ? 're-import' : 're-defined')
+                                    + ' it as type of %type.');
 
         } else {
             this.names[node.name] = node;
@@ -124,6 +186,14 @@ Scope.prototype = {
     },
 
     getType: function(node) {
+
+        if (node.isImport) {
+            return '<unresolved import>';
+        }
+
+        if (!node.type) {
+            return '<non-type token>';
+        }
 
         var type = node.type,
             string = '';
@@ -177,17 +247,24 @@ Scope.prototype = {
 
     },
 
+    getInfo: function(node) {
+        if (node.id === 'CLASS') {
+            return '[Class ' + node.name + ']';
+        }
+    },
+
     error: function(node, other, msg) {
 
-        msg = 'CompileError: ' + msg;
+        // Clean this up...
+        other && (msg = msg.replace('%oinfo', this.getInfo(other)));
+        other && other.name && (msg = msg.replace('%oname', other.name));
+        other && (msg = msg.replace('%otype', this.getType(other)));
+        other && (msg = msg.replace('%opos', 'line ' + other.line + ', col ' + other.col));
 
-        msg = msg.replace('%oname', other.name);
-        msg = msg.replace('%otype', this.getType(other));
-        msg = msg.replace('%opos', 'line ' + other.line + ', col ' + other.col);
-
-        msg = msg.replace('%name', node.name);
-        msg = msg.replace('%type', this.getType(node));
-        msg = msg.replace('%pos', 'line ' + node.line + ', col ' + node.col);
+        node && (msg = msg.replace('%info', this.getInfo(node)));
+        node && node.name && (msg = msg.replace('%name', node.name));
+        node && (msg = msg.replace('%type', this.getType(node)));
+        node && (msg = msg.replace('%pos', 'line ' + node.line + ', col ' + node.col));
 
         this.errors.push(msg);
 
@@ -208,6 +285,7 @@ extend(ModuleScope.prototype, Scope.prototype);
 function FunctionScope(base, parent, node) {
     Scope.call(this, base, parent, node);
     this.tree = this.node.body;
+    this.type = 'function';
 }
 
 FunctionScope.prototype = {
@@ -240,10 +318,16 @@ FunctionScope.prototype = {
 
 };
 
+extend(FunctionScope.prototype, Scope.prototype);
+
 
 function ClassScope(base, parent, node) {
+
     Scope.call(this, base, parent, node);
+    this.type = 'class';
+    this.members = {};
     //this.tree = this.node.body;
+
 }
 
 ClassScope.prototype = {
@@ -251,29 +335,48 @@ ClassScope.prototype = {
     compile: function() {
 
         // Define members
-        for(var i = 0, l = this.node.members; i < l; i++) {
+        for(var i = 0, l = this.node.members.length; i < l; i++) {
             var member = this.node.members[i];
-
+            this.defineMember(member);
         }
 
         // Define methods
-        for(var i = 0, l = this.node.methods; i < l; i++) {
+        for(var i = 0, l = this.node.methods.length; i < l; i++) {
+
             var method = this.node.methods[i];
+            this.defineMember(method);
 
             // Define method as member, and create sub scope for function
             // TODO define here
-            this.subScopes.push(new FunctionScope(this, this, method));
+            if (method.body) {
+                this.subScopes.push(new FunctionScope(this, this, method));
+            }
 
         }
 
         return this.subScopes;
 
+    },
+
+    defineMember: function(node) {
+
+        if (this.members.hasOwnProperty(node.name)) {
+            var name = this.members[node.name];
+            this.error(node, name, 'A member called "%name" was already '
+                                    + 'defined in the'
+                                    + ' current class at %opos as type of %otype, but %pos tries to '
+                                    + 're-defined'
+                                    + ' it as type of %type.');
+
+        } else {
+            this.members[node.name] = node;
+        }
+
     }
 
 };
 
-
-extend(FunctionScope.prototype, Scope.prototype);
+extend(ClassScope.prototype, Scope.prototype);
 
 
 // Compile a Module -----------------------------------------------------------

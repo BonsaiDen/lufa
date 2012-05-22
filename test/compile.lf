@@ -1,4 +1,11 @@
 
+import foo as bar
+import blub as foo
+import time.date
+
+
+int time
+
 list[int] array
 list[string] array
 
@@ -14,8 +21,31 @@ void test(string name, const int num = 2):
         num = 5
 
 void hello():
+
     name = 2
+
+    if name == 2:
+        int ok
+
+    elif name == 3:
+        map[int, string] messages
+
+        if messages > 4:
+            ret
+            foo = 2
+
+    else:
 
 class Base:
     
     int id = 0
+    
+
+    new Base():
+        ret
+
+    private void hello(const string text = 'none'):
+        ret
+
+    private void hello():
+        

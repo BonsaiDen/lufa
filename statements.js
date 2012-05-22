@@ -53,9 +53,18 @@ function parseImportExport(parser) {
 
         // Name mapping
         if (parser.advanceIf('AS')) {
+
             var name = parser.get();
             parser.advance('IDENTIFIER');
             module.as = name;
+
+            // Changes in order to make name resolving easier
+            name.isImport = true;
+            name.name = name.value;
+
+        } else {
+            module.isImport = true;
+            module.name = module.value;
         }
 
         this.names.push(module);
@@ -335,7 +344,7 @@ symbolTable.addStatement('CLASS', function(parser) {
 
         // Error out on obvious syntax errors
         if (token.is('IDENTIFIER') && !parser.peek().is('IDENTIFIER')) {
-            parser.error(token, 'Ambigous syntax in CLASS, missing either new or del to identify con-/destructor');
+            parser.error(token, 'Ambigious syntax in CLASS, missing either new or del to identify con-/destructor');
 
         // Constructors
         } else if (token.is('NEW')) {
