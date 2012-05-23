@@ -23,6 +23,7 @@ function Scope(base, parent, node) {
     this.node = node;
     this.tree = node;
 
+    this.types = {};
     this.names = {};
 
     this.errors = [];
@@ -46,7 +47,6 @@ Scope.prototype = {
         var returned = false,
             node = null;
 
-        console.log(this.tree);
         for(var i = 0, l = this.tree.length; i < l; i++) {
 
             if (returned) {
@@ -94,8 +94,25 @@ Scope.prototype = {
 
     // Handle compilation of different statements
     compile_VARIABLE: function(v) {
+
         this.defineName(v);
-        this.expressions.push(v);
+
+        // Detect hash declaration and create user types
+        if (v.type.value === 'hash' && v.right && v.right.id === 'HASHDEC') {
+
+            this.types[v.name] = v.right;
+            for(var i in v.right.fields) {
+                if (v.right.fields.hasOwnProperty(i)) {
+                    this.expressions.push(v.right.fields[i]);
+                }
+            }
+
+        } else {
+            this.expressions.push(v);
+        }
+
+        // TODO Do type resolution later, but COMPARE LINE NUMBERS!!!! To ensure it can compile
+
     },
 
     compile_FUNCTION: function(func) {
@@ -105,14 +122,17 @@ Scope.prototype = {
 
     compile_IF: function(iff) {
 
-        if (iff.body) {
-            this.subScopes.push(new Scope(this.base, this, iff.body));
-        }
+        this.expressions.push(iff.condition);
+        this.subScopes.push(new Scope(this.base, this, iff.body));
 
         for(var i = 0, l = iff.branches.length; i < l; i++) {
-            if (iff.branches[i].body) {
-                this.subScopes.push(new Scope(this.base, this, iff.branches[i].body));
+
+            if (iff.condition) {
+                this.expressions.push(iff.condition);
             }
+
+            this.subScopes.push(new Scope(this.base, this, iff.branches[i].body));
+
         }
 
     },
@@ -123,6 +143,7 @@ Scope.prototype = {
     },
 
     compile_ASSIGN: function(assign) {
+        // TODO check stuff and add expressions
         //console.log('assign', assign);
     },
 
@@ -133,8 +154,11 @@ Scope.prototype = {
         while((scope = scope.parent)) {
             if (scope.type === 'function') {
                 console.log('found function for return:', ret, this.getType(scope.node));
-                // TODO check return type
+
+                // TODO check return type later
+                scope.returns.push(ret);
                 break;
+
             }
         }
 
@@ -162,7 +186,7 @@ Scope.prototype = {
     },
 
     compileExpression: function(exp) {
-        //console.log('expression', exp);
+        this.expressions.push(exp);
     },
 
     defineName: function(node) {
@@ -178,6 +202,10 @@ Scope.prototype = {
         } else {
             this.names[node.name] = node;
         }
+
+    },
+
+    compareTypes: function(a, b) {
 
     },
 
@@ -286,6 +314,7 @@ function FunctionScope(base, parent, node) {
     Scope.call(this, base, parent, node);
     this.tree = this.node.body;
     this.type = 'function';
+    this.returns = [];
 }
 
 FunctionScope.prototype = {
@@ -334,23 +363,36 @@ ClassScope.prototype = {
 
     compile: function() {
 
+        // Constructor
+        if (this.node.constructor) {
+            this.subScopes.push(new FunctionScope(this, this, this.node.constructor));
+        }
+
+        // Destructor
+        if (this.node.destructor) {
+            this.subScopes.push(new FunctionScope(this, this, this.node.destructor));
+        }
+
         // Define members
-        for(var i = 0, l = this.node.members.length; i < l; i++) {
-            var member = this.node.members[i];
-            this.defineMember(member);
+        for(var i in this.node.members) {
+
+            if (this.node.members.hasOwnProperty(i)) {
+                var member = this.node.members[i];
+                this.defineMember(member);
+                this.expressions.push(member);
+            }
+
         }
 
         // Define methods
-        for(var i = 0, l = this.node.methods.length; i < l; i++) {
+        for(var i in this.node.methods) {
 
             var method = this.node.methods[i];
             this.defineMember(method);
 
             // Define method as member, and create sub scope for function
             // TODO define here
-            if (method.body) {
-                this.subScopes.push(new FunctionScope(this, this, method));
-            }
+            this.subScopes.push(new FunctionScope(this, this, method));
 
         }
 

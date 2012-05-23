@@ -127,7 +127,6 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
     this.id = 'HASH';
 
-    this.inner = [];
     if (parser.tokenNot('RIGHT_CURLY')) {
 
         // Determine the type
@@ -142,6 +141,7 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
             if (token.is('IDENTIFIER')) {
 
                 this.id = 'HASHVALUE';
+                this.fields = {};
 
                 while(true) {
 
@@ -151,7 +151,12 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
                     parser.advance('COLON');
                     token.left = parser.getExpression(2);
 
-                    this.inner.push(token);
+                    if (this.fields.hasOwnProperty(token.name)) {
+                        parser.error('Duplicated field "' + token.name + '" in hash value');
+
+                    } else {
+                        this.fields[token.name] = token;
+                    }
 
                     if (parser.get().not('COMMA')) {
                         break;
@@ -165,6 +170,7 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
             } else {
 
                 this.id = 'MAPVALUE';
+                this.inner = [];
 
                 while(true) {
 
@@ -190,14 +196,17 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
         // }
         } else {
 
-            this.id = 'HASHDESC';
+            this.id = 'HASHDEC';
+            this.fields = {};
 
             while(true) {
 
                 var mod = parser.get(),
                     isConstant = false;
 
-                if (parser.advanceIf('MODIFIER')) {
+                if (mod.id === 'MODIFIER') {
+
+                    parser.advance('MODIFIER');
 
                     if (mod.value !== 'const') {
                         parser.error('Unexpected MODIFIER ' + mod.value);
@@ -207,11 +216,20 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
                 }
 
-                parser.advance();
+                if (!(parser.advanceIf('TYPE') || parser.advanceIf('IDENTIFIER'))) {
+                    parser.error('Expected TYPE or IDENTIFIER, but got %t');
+                }
 
+                // Parse type declaration
                 var dec = parser.getDeclaration(parser.get(), true, false, true);
                 dec.isConst = isConstant;
-                this.inner.push(dec);
+
+                if (this.fields.hasOwnProperty(dec.name)) {
+                    parser.error('Duplicated field "' + dec.name + '" in hash declaration');
+
+                } else {
+                    this.fields[dec.name] = dec;
+                }
 
                 if (parser.get().not('COMMA')) {
                     break;
@@ -225,7 +243,7 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
     }
 
-    parser.advance('RIGHT_CURLY', 'Missing COMMA in HASH literal');
+    parser.advance('RIGHT_CURLY', 'Missing COMMA in HASH literal / declaration');
 
     this.arity = 'unary';
     return this;

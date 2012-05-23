@@ -58,9 +58,8 @@ Parser.prototype = {
 
         var s = this.getStatementList();
         this.advance('END');
-        //scope.pop();
 
-        return s;
+        return Array.isArray(s) ? s : [s];
 
     },
 
@@ -265,7 +264,7 @@ Parser.prototype = {
     },
 
     getBody: function() {
-        return !this.advanceIf('EOL') ? this.getBlock() : null;
+        return !this.advanceIf('EOL') ? this.getBlock() : [];
     },
 
 
@@ -274,9 +273,8 @@ Parser.prototype = {
     getDeclaration: function(dec, getValue, isAbstract, inHash) {
 
         this.getType(dec);
-
-        // TODO does not correctly work in all cases as it seems
         dec.name = this.get().value;
+
         this.advance('IDENTIFIER');
 
         dec.id = 'VARIABLE';
@@ -303,7 +301,7 @@ Parser.prototype = {
 
                 if (!isAbstract) {
                     this.advance('COLON');
-                    dec.body = this.getBlock();
+                    dec.body = this.getBody();
 
                 } else if (this.advanceIf('COLON')) {
                     this.error(dec, 'Declared as abstract but has a body,');
@@ -332,14 +330,14 @@ Parser.prototype = {
             builtin: true
         };
 
-        // small cleanup
-        delete type.value;
-
         // User defined type
         if (type.is('IDENTIFIER')) {
             type.type.builtin = false;
             return type;
         }
+
+        // small cleanup
+        delete type.value;
 
         // Grab sub types
         if (type.is('TYPE') && this.advanceIf('LEFT_BRACKET')) {

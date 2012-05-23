@@ -1,4 +1,5 @@
-/**  * Copyright (c) 2012 Ivo Wetzel.
+/**
+  * Copyright (c) 2012 Ivo Wetzel.
   *
   * Permission is hereby granted, free of charge, to any person obtaining a copy
   * of this software and associated documentation files (the "Software"), to deal
@@ -302,9 +303,9 @@ symbolTable.addStatement('CLASS', function(parser) {
 
     parser.advance('COLON');
 
-    this.members = [];
-    this.methods = [];
-    this.constructors = [];
+    this.members = {};
+    this.methods = {};
+    this.constructor = null;
     this.destructor = null;
 
     if (!parser.advanceIf('BLOCK_START')) {
@@ -362,7 +363,11 @@ symbolTable.addStatement('CLASS', function(parser) {
                 parser.error(token, 'Constructor function must match name of class,');
             }
 
-            this.constructors.push(token);
+            if (this.constructor) {
+                parser.error('Class already has a constructor but defined another one');
+            }
+
+            this.constructor = token;
 
         // Destructors
         } else if (token.is('DELETE')) {
@@ -397,13 +402,26 @@ symbolTable.addStatement('CLASS', function(parser) {
 
             // TODO Variables, abstracts may NOT define a value
             if (token.is('VARIABLE')) {
+
                 token.id = 'MEMBER';
-                this.members.push(token);
+                if (this.members.hasOwnProperty(token.name)) {
+                    parser.error('Duplicated member name "' + token.name + '" in class declaration');
+
+                } else {
+                    this.members[token.name] = token;
+                }
 
             // TODO Methods, abstract ones may NOT end with a COLON
             } else {
+
                 token.id = 'METHOD';
-                this.methods.push(token);
+                if (this.methods.hasOwnProperty(token.name)) {
+                    parser.error('Duplicated method name "' + token.name + '" in class declaration');
+
+                } else {
+                    this.methods[token.name] = token;
+                }
+
             }
 
         }
