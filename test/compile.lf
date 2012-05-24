@@ -1,3 +1,10 @@
+list b
+list[int] a
+list[list[int]] c
+list[list[User]] d
+
+map[int, string] e
+
 
 import foo as bar
 import blub as foo

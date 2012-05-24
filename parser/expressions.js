@@ -21,6 +21,7 @@
   */
 var symbolTable = require('./symbolTable');
 
+
 // Lists and list comprehensions ----------------------------------------------
 // ----------------------------------------------------------------------------
 symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
@@ -204,7 +205,7 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
                 var mod = parser.get(),
                     isConstant = false;
 
-                if (mod.id === 'MODIFIER') {
+                if (parser.tokenIs('MODIFIER')) {
 
                     parser.advance('MODIFIER');
 

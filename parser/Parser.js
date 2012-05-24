@@ -21,6 +21,7 @@
   */
 var symbolTable = require('./symbolTable');
 
+// Load all symbol definitions
 require('./baseSymbols');
 require('./expressions');
 require('./statements');
@@ -59,7 +60,7 @@ Parser.prototype = {
         var s = this.getStatementList();
         this.advance('END');
 
-        return Array.isArray(s) ? s : [s];
+        return Array.isArray(s) ? s : s !== null ? [s] : [];
 
     },
 
@@ -320,29 +321,30 @@ Parser.prototype = {
 
     },
 
-    getType: function(type) {
+    getType: function(token) {
 
-        var parentType = type.value;
-        type.type = {
-            value: type.value,
+        var parentType = token.value;
+        token.type = {
+            value: token.value,
             isFunction: false,
             params: null,
-            builtin: true
+            builtin: true,
+            sub: null
         };
 
         // User defined type
-        if (type.is('IDENTIFIER')) {
-            type.type.builtin = false;
-            return type;
+        if (token.is('IDENTIFIER')) {
+            token.type.builtin = false;
+            return token;
         }
 
         // small cleanup
-        delete type.value;
+        delete token.value;
 
         // Grab sub types
-        if (type.is('TYPE') && this.advanceIf('LEFT_BRACKET')) {
+        if (token.is('TYPE') && this.advanceIf('LEFT_BRACKET')) {
 
-            type.inner = [];
+            token.type.sub = [];
 
             while((this.get().not('RIGHT_BRACKET'))) {
 
@@ -352,28 +354,34 @@ Parser.prototype = {
                 if (this.advanceIf('IDENTIFIER')) {
 
                     if (parentType !== 'hash' && parentType !== 'list' && parentType !== 'map') {
-                        this.error(type, 'Cannot have sub type IDENTIFIER for non LIST/HASH/MAP types');
+                        this.error(token, 'Cannot have sub type IDENTIFIER for non LIST/HASH/MAP types');
                     }
 
-                    type.inner.push(sub);
+                    this.getType(sub);
+                    token.type.sub.push(sub.type);
 
                 } else if (this.advanceIf('TYPE')) {
 
                     if (parentType !== 'list' && parentType !== 'map') {
-                        this.error(type, 'Cannot have sub type TYPE for non LIST/MAP types');
+                        this.error(token, 'Cannot have sub type TYPE for non LIST/MAP types');
                     }
 
-                    type.inner.push(sub);
                     this.getType(sub);
+                    token.type.sub.push(sub.type);
 
+                }
+
+                console.log(token.type.sub);
+                if (parentType !== 'map' && token.type.sub.length > 1) {
+                    this.error(token, 'Cannot have multiple sub types for ' + token.type.value.toUpperCase());
+                }
+
+                if (parentType === 'map' && token.type.sub.length > 2) {
+                    this.error(token, 'Cannot have more than 2 sub types for MAP');
                 }
 
                 if (this.get().not('COMMA')) {
                     break;
-                }
-
-                if (parentType !== 'map' || type.inner.length > 1) {
-                    this.error(type, 'Cannot have multiple or more than 2 sub types for non MAP types');
                 }
 
                 this.advance('COMMA');
@@ -386,11 +394,11 @@ Parser.prototype = {
 
         // Function type, we don't need param names here!
         if (this.advanceIf('LEFT_PAREN')) {
-            this.getFunctionParams(type.type, true);
-            type.type.isFunction = true;
+            this.getFunctionParams(token.type, true);
+            token.type.isFunction = true;
         }
 
-        return type;
+        return token;
 
     },
 

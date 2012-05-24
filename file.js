@@ -1,5 +1,5 @@
-var lexer = require('./lexer'),
-    Parser = require('./Parser').Parser,
+var lexer = require('./parser/lexer'),
+    Parser = require('./parser/Parser').Parser,
     util = require('util'),
     fs = require('fs');
 
@@ -100,7 +100,7 @@ Scope.prototype = {
         // Detect hash declaration and create user types
         if (v.type.value === 'hash' && v.right && v.right.id === 'HASHDEC') {
 
-            this.types[v.name] = v.right;
+            this.types[v.name] = v;
             for(var i in v.right.fields) {
                 if (v.right.fields.hasOwnProperty(i)) {
                     this.expressions.push(v.right.fields[i]);
@@ -139,6 +139,7 @@ Scope.prototype = {
 
     compile_CLASS: function(clas) {
         this.defineName(clas);
+        this.types[clas.name] = clas;
         this.subScopes.push(new ClassScope(this.base, this, clas));
     },
 
@@ -151,15 +152,18 @@ Scope.prototype = {
 
         // go up scope and find the matching function
         var scope = this;
-        while((scope = scope.parent)) {
+        while(scope) {
             if (scope.type === 'function') {
-                console.log('found function for return:', ret, this.getType(scope.node));
+                console.log('found function for return:', ret, scope.node.name + this.getType(scope.node));
 
                 // TODO check return type later
                 scope.returns.push(ret);
                 break;
 
             }
+
+            scope = scope.parent;
+
         }
 
         if (scope === null) {
@@ -213,6 +217,20 @@ Scope.prototype = {
 
     },
 
+    // this functions returns members, methods and other things like indexability for
+    // compilation
+    resolveType: function(node) {
+
+        var type = node.type;
+
+        if (!type.builtin) {
+
+        } else {
+            // return a predefined built in for now, later get this from code or something
+        }
+
+    },
+
     getType: function(node) {
 
         if (node.isImport) {
@@ -226,6 +244,11 @@ Scope.prototype = {
         var type = node.type,
             string = '';
 
+        // TODO Resolve user types here
+        if (!type.builtin) {
+
+        }
+
         // Handle function types
         if (type.isFunction) {
             // stuff like void(int, string) func = ...
@@ -233,15 +256,15 @@ Scope.prototype = {
         } else {
 
             var inner = [];
-
-            // TODO move "inner" into the type object itself?
-            if (node.inner) {
-                for(var i = 0, l = node.inner.length; i < l; i++) {
-                    inner.push(this.getType(node.inner[i]));
+            if (type.sub) {
+                for(var i = 0, l = type.sub.length; i < l; i++) {
+                    inner.push(this.getType({
+                        type: type.sub[i]
+                    }));
                 }
             }
 
-            string = inner.length ? type.value + '[' + inner.join(', ') + ']' : type.value;
+            string = inner.length ? type.value + '[ ' + inner.join(', ') + ' ]' : type.value;
 
         }
 
@@ -251,13 +274,13 @@ Scope.prototype = {
         }
 
         if (node.id === 'FUNCTION') {
-            return '<function:' + string + '>';
+            return ':(function)' + string;
 
         } else if (node.id === 'CLASS') {
-            return '<class:' + string + '>';
+            return ':(class)' + string;
 
         } else {
-            return '<' + string + '>';
+            return ':' + string;
         }
 
     },
@@ -418,6 +441,9 @@ ClassScope.prototype = {
 
 };
 
+// class user types
+// class parent classes
+
 extend(ClassScope.prototype, Scope.prototype);
 
 
@@ -430,7 +456,7 @@ function Module(filename) {
         p = new Parser();
 
     this.tree = p.parse(tokens);
-    //console.log(util.inspect(this.tree, false, 10));
+    console.log(util.inspect(this.tree, false, 10));
 
     this.scope = new ModuleScope(this, null, this.tree);
     this.scope.compile();
@@ -441,7 +467,6 @@ function Module(filename) {
 Module.prototype = {
 
 };
-
 
 var e = new Module('test/compile.lf');
 

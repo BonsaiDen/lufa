@@ -435,6 +435,12 @@ function parse(input, tabWidth, stripComments) {
 
         // Comment
         } else if ((m = subline.match(commentRegExp))) {
+
+            // Detect unclosed multiline comments
+            if (m[0].substr(0, 3) === '###') {
+                throw new ParseError('Unclosed multiline comment', line, col);
+            }
+
             token.id = 'COMMENT';
             token.plain = m[0];
             token.value = m[0].substr(1); // strip starting '#'
