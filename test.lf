@@ -1,0 +1,105 @@
+#import foo
+#import foo as l
+#from foo import data
+#from foo import data as bar
+
+string test = ('foo' * 4) + 'test'
+int a = 4.0 + 'test'
+
+int e = 4 % 5 * 4.0
+bool gt = 8 > 3 && 5 < 3
+
+string f = (string)(4 + 4)
+
+e += 5
+f += 'foo'
+
+int add(int a, int b):
+    add() + 2
+    ret a + b
+
+void repeat(string a, const int b = 0):
+    b = b * 2
+
+repeat('foo', 4, 2)
+repeat()
+
+list[int] numbers = [1, 2, 3]
+
+numbers += 2
+
+# TODO resolve signatures, right now this passes because both are void
+void(string, const int) e = repeat
+
+#int ll = 'foo'.length
+
+###
+
+list b
+list[int] a
+list[list[int]] c
+list[list[User]] d
+
+map[int, string] e = { 1: 'foo' }
+
+
+
+#string foo 
+hash User = {
+    string name,
+    int id = 1
+}
+
+int time
+
+list[int] array
+list[string] array
+
+int test = 0
+
+
+void test(string name, const int num = 2):
+    num = 3
+    name = 'test'
+
+    void level3(string name):
+        int l3
+        num = 5
+
+void hello():
+
+    name = 2
+
+    if name == 2:
+        int ok
+
+    elif name == 3:
+        map[int, string] messages
+
+        if messages > 4:
+            ret name
+            foo = 2
+
+    else:
+
+scope:
+    int a = 0
+
+class Base extends Object:
+    
+    int id = 0
+
+    new Base():
+        ret
+
+    private void hello(const string text = 'none'):
+        ret text
+
+    private void helloOther():
+
+
+for int i in numbers:
+    int i
+    print(i)
+
+###
