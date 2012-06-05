@@ -74,8 +74,15 @@ var FunctionScope = Class(function(module, baseScope, parentScope, baseNode) {
     validateReturns: function() {
 
         for(var i = 0, l = this.returns.length; i < l; i++) {
-            var exp = this.returns[i],
+
+            var exp = this.returns[i];
+            if (exp.right) {
                 rType = this.resolveExpression(exp.right);
+
+            // TODO add default returns at a later point?
+            } else {
+                rType = 'void'; // TODO get void type from builtins
+            }
 
             // TODO validate against function type
 

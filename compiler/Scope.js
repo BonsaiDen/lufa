@@ -46,6 +46,7 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
         types: {}
     };
 
+    this.types = {};
     this.defaults = [];
     this.conditions = [];
     this.expressions = [];
@@ -174,8 +175,11 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
 
         for(var i = 0, l = this.defaults.length; i < l; i++) {
 
-            var def = this.defaults[i],
-                rType = this.resolveExpression(def.right);
+            var def = this.defaults[i];
+
+            this.typeFromNode(def);
+
+            var rType = this.resolveExpression(def.right);
 
             //console.log('defaults======', def, rType);
 
@@ -337,10 +341,9 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
         switch(node.id) {
 
             case 'LIST':
-                console.log(node);
+
                 // The list type is determined by the first item in the list
                 // subsequent lists must be the same type or will raise errors
-                //
                 // if a list is mixed, it will match all assignments
                 for(var i = 0, l = node.items.length; i < l; i++) {
                     var item = node.items[i];
@@ -427,35 +430,7 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
                 break;
 
             case 'ASSIGN':
-
-                left = this.resolveExpressionType(node.left);
-                right = this.resolveExpressionType(node.right);
-
-                // Check assignment operator
-                if (left && right) {
-
-                    if (node.value) {
-                        value = operators.resolveBinary(node.value, left.id, right.id);
-                        if (value === null) {
-                            this.error(node, null, 'Incompatible types for {first.value} assignment operator at {first.pos}, result for operands "' + left.id + ':' + right.id + '" is undefined.');
-                            throw new ExpressionError();
-                        }
-
-                    } else if (left.id === right.id) {
-                        value = left;
-                    }
-
-                    if (left.isConst) {
-                        this.error(node, null, 'Cannot assign to constant at {first.pos}.');
-                    }
-
-                }
-
-                if (value === null) {
-                    this.error(node, null, 'Incompatible types for {first.id} assignment at {first.pos}, result for operands "' + left.id + ' = ' + right.id + '" is undefined.');
-                    throw new ExpressionError();
-                }
-
+                value = this.validateAssignment(node);
                 break;
 
             // Binary and unary expressions
@@ -507,6 +482,41 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
 
     },
 
+    validateAssignment: function(node) {
+
+        var value = null,
+            left = this.resolveExpressionType(node.left),
+            right = this.resolveExpressionType(node.right);
+
+        // Check assignment operator
+        if (left && right) {
+
+            if (node.value) {
+                value = operators.resolveBinary(node.value, left.id, right.id);
+                if (value === null) {
+                    this.error(node, null, 'Incompatible types for {first.value} assignment operator at {first.pos}, result for operands "' + left.id + ':' + right.id + '" is undefined.');
+                    throw new ExpressionError();
+                }
+
+            } else if (left.id === right.id) {
+                value = left;
+            }
+
+            if (left.isConst) {
+                this.error(node, null, 'Cannot assign to constant at {first.pos}.');
+            }
+
+        }
+
+        if (value === null) {
+            this.error(node, null, 'Incompatible types for {first.id} assignment at {first.pos}, result for operands "' + left.id + ' = ' + right.id + '" is undefined.');
+            throw new ExpressionError();
+        }
+
+        return value;
+
+    },
+
     validateParameter: function(node, i, param, arg) {
 
         param = builtinTypes.resolveFromType(param.type);
@@ -527,6 +537,7 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
                 if (defs.hasOwnProperty(node.value)) {
 
                     var name = defs[node.value];
+                    this.typeFromNode(name);
 
                     // TODO return object and add things like isConst and others
                     if (name.type.builtin) {
@@ -565,8 +576,105 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
     },
 
     typeFromNode: function(node) {
+
+        if (this.types.hasOwnProperty(node.name)) {
+            return this.types[node.name];
+        }
+
+        this.types[node.name] = this.getTypeDescription(node.type, node);
+        console.log(node.name, '=',this.types[node.name]);
+        return this.types[node.name];
+
         // TODO recursively assemble sub type construct like the one returned by resolveTypeFromName
         // this should handle builtins and functions for now
+
+    },
+
+    getTypeDescription: function(type, node, getReturn) {
+
+        function getParams(params, value) {
+
+            var paramList = [],
+                paramIds = [];
+
+            for(var i = 0, l = params.length; i < l; i++) {
+                var param = this.getTypeDescription(params[i].type);
+                paramList.push(param);
+                paramIds.push(param.id);
+            }
+
+            value.id += '(' + paramIds.join(',') + ')';
+            value.params = paramList;
+
+        }
+
+        function getSub(type, value) {
+
+            if (type.sub) {
+
+                var subTypes = [],
+                    subTypeIds = [];
+
+                for(var i = 0, l = type.sub.length; i < l; i++) {
+                    var subType = this.getTypeDescription(type.sub[i]);
+                    subTypes.push(subType);
+                    subTypeIds.push(subType.id);
+                }
+
+                value.id += '[' + subTypeIds.join(',') + ']';
+                value.sub = subTypes;
+
+            } else {
+                value.sub = null;
+            }
+
+        }
+
+        // Function definitions
+        if (node && node.id === 'FUNCTION') {
+
+            var ret = this.getTypeDescription(type),
+                value = {
+                    id: ret.id, // this is a plain id for comparison
+                    returnType: ret,
+                    isFunction: true,
+                    isConst: type.isConst || false,
+                    isList: false
+                };
+
+            getParams.call(this, node.params, value);
+            return value;
+
+        }
+
+        // Builtin types
+        if (type.builtin) {
+
+            var plain = builtinTypes.resolveFromType(type),
+                value = {
+                    id: plain.id,
+                    isFunction: type.isFunction || false,
+                    isConst: type.isConst || false,
+                    isList: plain.id === 'list'
+                };
+
+            // TODO for param validation, ignore the const part when comparing
+            // against the arguments
+            value.id = (type.isConst ? 'const:' : '') + value.id;
+            getSub.call(this, type, value);
+
+            // Function types, this handles things like: list[int](string) e
+            if (type.isFunction && !getReturn) {
+                value.returnType = this.getTypeDescription(type, null, true);
+                getParams.call(this, type.params, value);
+            }
+
+            return value;
+
+        } else {
+            console.log(type);
+        }
+
     },
 
     resolveMember: function(struct, property) {

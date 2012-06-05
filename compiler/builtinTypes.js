@@ -88,6 +88,19 @@ var types = {
 
     },
 
+    'MAP': {
+
+        id: 'map',
+        methods: {
+
+        },
+
+        members: {
+
+        }
+
+    },
+
     'HASH': {
 
         id: 'hash',
@@ -117,6 +130,7 @@ var builtinMap = {
     'string': 'STRING',
     'list': 'LIST',
     'hash': 'HASH',
+    'map': 'MAP',
     'boolean': 'BOOLEAN',
     'void': 'VOID'
 };

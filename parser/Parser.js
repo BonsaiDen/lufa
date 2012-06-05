@@ -460,7 +460,7 @@ Parser.prototype = {
 
                 }
 
-                param.isConst = isConstant;
+                param.type.isConst = isConstant;
 
                 // Var args like (int b...) method will then receive a list
                 if (this.advanceIf('ELLIPSIS')) {

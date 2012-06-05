@@ -33,7 +33,7 @@ var Module = Class(function(name, fileData) {
     this.filename = fileData.filename;
     this.ast = fileData.ast;
 
-    //console.log(util.inspect(this.ast, false, 8, true));
+    console.log(util.inspect(this.ast, false, 8, true));
 
     this.imports = {};
     this.exports = {};

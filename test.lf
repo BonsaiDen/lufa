@@ -3,33 +3,45 @@
 #from foo import data
 #from foo import data as bar
 
-string test = ('foo' * 4) + 'test'
-int a = 4.0 + 'test'
-
-int e = 4 % 5 * 4.0
-bool gt = 8 > 3 && 5 < 3
-
-string f = (string)(4 + 4)
-
-e += 5
-f += 'foo'
-
-int add(int a, int b):
-    add() + 2
-    ret a + b
-
+#string test = ('foo' * 4) + 'test'
+#int a = 4.0 + 'test'
+#
+#int e = 4 % 5 * 4.0
+#bool gt = 8 > 3 && 5 < 3
+#
+#string f = (string)(4 + 4)
+#
+#e += 5
+#f += 'foo'
+#
+#int add(int a, int b):
+#    add() + 2
+#    ret a + b
+#
 void repeat(string a, const int b = 0):
     b = b * 2
+#
+#repeat('foo', 4, 2)
+#repeat()
 
-repeat('foo', 4, 2)
-repeat()
+list[list[int]] numbers
+map[string, int] stuff
 
-list[int] numbers = [1, 2, 3]
+numbers = [1, 2, 3]
 
-numbers += 2
+#stuff = { 'hello': 1 }
+
+#numbers += 2
 
 # TODO resolve signatures, right now this passes because both are void
-void(string, const int) e = repeat
+list[int](string, const int) e = repeat
+
+void(string) foo(string a):
+    ret
+
+# TODO make this parseable... somehow AND BETTER SYNTAX
+void(string)(string a) fob
+
 
 #int ll = 'foo'.length
 
