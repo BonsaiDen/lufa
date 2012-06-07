@@ -142,7 +142,7 @@ symbolTable.addPrefix('DELETE');
 symbolTable.addLiteral('INTEGER');
 symbolTable.addLiteral('FLOAT');
 symbolTable.addLiteral('STRING');
-symbolTable.addLiteral('BOOLEAN');
+symbolTable.addLiteral('BOOL');
 symbolTable.addLiteral('NULL');
 
 symbolTable.addSymbol('IDENTIFIER').nud = function() {

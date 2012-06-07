@@ -3,29 +3,30 @@
 #from foo import data
 #from foo import data as bar
 
-#string test = ('foo' * 4) + 'test'
-#int a = 4.0 + 'test'
+string test = ('foo' * 4) + 'test'
+int a = 4.0 + 2
+
+# TODO warn about implicit conversion instead of erroring out in case of int / float or float / int
+int e = 4 % 5 * 4.0
+bool isGreater = (8 > 3 && 5 < 3)
 #
-#int e = 4 % 5 * 4.0
-#bool gt = 8 > 3 && 5 < 3
+string dasod = (string)(string)true
+###
+e += 5
 #
-#string f = (string)(4 + 4)
-#
-#e += 5
-#f += 'foo'
-#
-#int add(int a, int b):
+int add(int a, int b):
 #    add() + 2
 #    ret a + b
 #
-#void repeat(string a, const int b = 0):
-#    b = b * 2
+void repeat(string a, const int b = 0):
+    b = b * 2
+
 #
 #repeat('foo', 4, 2)
 #repeat()
 
-#list[list[int]] numbers
-#map[string, int] stuff
+list[list[int]] numbers
+map[string, int] stuff
 #
 #numbers = [1, 2, 3]
 
@@ -33,12 +34,12 @@
 
 #numbers += 2
 
-list[int] < (string, const int) e = repeat
+list[int] < (string, const int) f = repeat
 #
 #    ret
 
 # TODO make this parseable... somehow AND BETTER SYNTAX
-int() < (string) foo(string a):
+int() < (string) foo(string a = 2):
 
     # compare this.id against parent.returnType.id
     int() c(string a):
@@ -60,7 +61,7 @@ int() < (string) < (string) l = foo
 void(string) < (int) fob
 
 #int ll = 'foo'.length
-
+###
 ###
 
 list b

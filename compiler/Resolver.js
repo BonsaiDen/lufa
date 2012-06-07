@@ -23,8 +23,6 @@ var Class = require('../lib/Class').Class,
     operators = require('./operators'),
     builtinTypes = require('./builtinTypes');
 
-function ExpressionError() {}
-function NameError() {}
 
 
 var Resolver = Class(function(scope) {
@@ -33,21 +31,22 @@ var Resolver = Class(function(scope) {
 
 }, {
 
+    $ExpressionError: function() {
+
+    },
+
+    $NameError: function() {
+
+    },
+
     validateDefaults: function() {
 
         var scope = this.scope;
         for(var i = 0, l = scope.defaults.length; i < l; i++) {
 
             var def = scope.defaults[i];
-            this.typeFromNode(def);
-
-            var rType = this.resolveExpression(def.right);
-
-            //console.log('defaults======', def, rType);
-
-            // TODO better error handling
-            if (!this.compareTypes(def.type, rType)) {
-                //this.error(def, def.right, 'Invalid type assignment');
+            if (def.right) {
+                this.resolveExpression(def);
             }
 
         }
@@ -72,6 +71,8 @@ var Resolver = Class(function(scope) {
         var scope = this.scope;
         for(var i = 0, l = scope.returns.length; i < l; i++) {
 
+            console.log('return');
+
             var exp = scope.returns[i];
             if (exp.right) {
                 var rType = this.resolveExpression(exp.right);
@@ -90,20 +91,44 @@ var Resolver = Class(function(scope) {
     // Right must be a object returned by the expression resolver
     // Left must be a type object from a token
     compareTypes: function(left, right) {
-        //console.log(left, right);
+
+        if (!right) {
+            return false;
+        }
+
+        if (left.isFunction || right.isFunction) {
+            return left.id === right.id;
+
+        } else {
+            var constEx = /const~/g;
+            return left.id.replace(constEx, '') === right.id.replace(constEx, '');
+        }
+
     },
 
     resolveExpression: function(node) {
 
         try {
-            var type = this.resolveExpressionType(node);
+
+            // Declarations are handled like assignments
+            var type = null;
+            if (node.arity === 'declaration') {
+                type = this.validateAssignment({
+                    left: node,
+                    right: node.right
+                });
+
+            } else {
+                type = this.resolveExpressionType(node);
+            }
+
             return {
                 type: type
             };
 
         } catch(err) {
 
-            if (!(err instanceof ExpressionError) && !(err instanceof NameError)) {
+            if (!(err instanceof Resolver.$ExpressionError) && !(err instanceof Resolver.$NameError)) {
                 throw err;
 
             } else {
@@ -146,10 +171,15 @@ var Resolver = Class(function(scope) {
                 break;
 
             case 'NAME':
-                value = this.resolveTypeFromName(node);
+                value = this.scope.resolveName(node);
                 break;
 
             case 'IDENTIFIER':
+                break;
+
+            case 'VARIABLE':
+            case 'PARAMETER':
+                value = this.typeFromNode(node);
                 break;
 
             case 'MEMBER':
@@ -163,8 +193,20 @@ var Resolver = Class(function(scope) {
                 break;
 
             case 'CAST':
+
                 if (node.type.isBuiltin) {
-                    value = builtinTypes.resolveFromType(node.type);
+
+                    right = this.resolveExpressionType(node.right);
+                    value = this.getTypeDescription(node.type);
+
+                    console.log(node);
+                    if (this.compareTypes(right, value)) {
+                        this.scope.warning(node, null, 'Usesless cast from "' + right.id + '" to "' + value.id + '" at {first.pos}.');
+
+                    } else if (!operators.resolveCast(right.id, value.id)) {
+                        this.scope.error(node, null, 'Cannot cast from "' + right.id + '" to "' + value.id + '" at {first.pos}.');
+                        throw new Resolver.$ExpressionError();
+                    }
 
                 } else {
                     throw new Error('Cast to non builtin types is not supported at the moment');
@@ -178,7 +220,7 @@ var Resolver = Class(function(scope) {
 
                     if (!left.isFunction) {
                         this.scope.error(node, null, 'Cannot call non-function type "' + left.id + '" at {first.pos}.');
-                        throw new ExpressionError();
+                        throw new Resolver.$ExpressionError();
 
                     // Validate arguments
                     } else {
@@ -209,7 +251,7 @@ var Resolver = Class(function(scope) {
 
                 if (value === null) {
                     this.scope.error(node.left, null, 'Cannot call non-function type at {first.pos}.');
-                    throw new ExpressionError();
+                    throw new Resolver.$ExpressionError();
                 }
 
                 break;
@@ -235,7 +277,7 @@ var Resolver = Class(function(scope) {
 
                     if (value === null) {
                         this.scope.error(node, null, 'Incompatible types for {first.id} operator at {first.pos}, result for operands "' + left.id + ':' + right.id + '" is undefined.');
-                        throw new ExpressionError();
+                        throw new Resolver.$ExpressionError();
                     }
 
                 } else if (node.arity === 'unary') {
@@ -247,7 +289,7 @@ var Resolver = Class(function(scope) {
 
                     if (value === null) {
                         this.scope.error(node, null, 'Incompatible types for unary {first.id} operator at {first.pos}, result for operand "' + right.id + '" is undefined.');
-                        throw new ExpressionError();
+                        throw new Resolver.$ExpressionError();
                     }
 
                     break;
@@ -279,23 +321,29 @@ var Resolver = Class(function(scope) {
             if (node.value) {
                 value = operators.resolveBinary(node.value, left.id, right.id);
                 if (value === null) {
-                    this.scope.error(node, null, 'Incompatible types for {first.value} assignment operator at {first.pos}, result for operands "' + left.id + ':' + right.id + '" is undefined.');
-                    throw new ExpressionError();
+                    this.scope.error(node, null, 'Invalid types for {first.value} assignment at {first.pos}, result for operands "' + left.id + ':' + right.id + '" is undefined.');
+                    throw new Resolver.$ExpressionError();
                 }
 
-            } else if (left.id === right.id) {
+            } else if (this.compareTypes(left, right)) {
                 value = left;
             }
 
-            if (left.isConst) {
-                this.scope.error(node, null, 'Cannot assign to constant at {first.pos}.');
+            if (left.isConst && node.left.id !== 'PARAMETER') {
+                this.scope.error(node.left, null, 'Cannot assign to constant "{first.name}" at {first.pos}.');
+            }
+
+            // Allow implicit conversion, but raise a warning
+            if (operators.resolveImplicitCast(right.id, left.id)) {
+                this.scope.error(node.left, null, 'Implicit cast of "' + right.id + '" to "' + left.id + '" at {first.pos}.');
+                value = left;
             }
 
         }
 
         if (value === null) {
-            this.scope.error(node, null, 'Incompatible types for {first.id} assignment at {first.pos}, result for operands "' + left.id + ' = ' + right.id + '" is undefined.');
-            throw new ExpressionError();
+            this.scope.error(node.left, null, 'Invalid assignment at {first.pos}, types do not match: ' + right.id + ' != ' + left.id + '.');
+            throw new Resolver.$ExpressionError();
         }
 
         return value;
@@ -313,55 +361,6 @@ var Resolver = Class(function(scope) {
 
     },
 
-    resolveTypeFromName: function(node) {
-
-        var scope = this.scope;
-        for(var d in scope.defines) {
-            if (scope.defines.hasOwnProperty(d)) {
-
-                var defs = scope.defines[d];
-                if (defs.hasOwnProperty(node.value)) {
-
-                    var name = defs[node.value];
-                    this.typeFromNode(name);
-
-                    // TODO return object and add things like isConst and others
-                    if (name.type.isBuiltin) {
-
-                        //console.log(name);
-                        //var plain = builtinTypes.resolveFromType(name.type);
-                        //return {
-                            //id: plain.id,
-                            //isList: name.id === 'LIST',
-                            //isFunction: name.id === 'FUNCTION',
-                            //isConst: name.isConst || false,
-                            //type: plain,
-                            //params: name.params || null,
-                            //requiredParams: name.requiredParams || 0,
-                            //name: node.value
-                        //};
-
-                    } else {
-                        console.log('found used defined', name.name || name.value);
-                        // user defined type
-                    }
-
-                }
-
-            }
-        }
-
-        // TODO: Error due to missing name!
-        if (scope.parentScope) {
-            return scope.parentScope.resolver.resolveTypeFromName(node);
-
-        } else {
-            scope.error(node, null, 'Reference to undefined name "{first.name}" at {first.pos}.');
-            throw new NameError();
-        }
-
-    },
-
     typeFromNode: function(node) {
 
         if (this.types.hasOwnProperty(node.name)) {
@@ -369,7 +368,7 @@ var Resolver = Class(function(scope) {
         }
 
         this.types[node.name] = this.getTypeDescription(node.type, node);
-        console.log(node.name, '=',this.types[node.name].id);
+        //console.log(node.name, '=',this.types[node.name].id);
         return this.types[node.name];
 
     },
@@ -416,7 +415,7 @@ var Resolver = Class(function(scope) {
 
         }
 
-        var value;
+        var value = null;
 
         // Function definitions
         if (node && node.id === 'FUNCTION') {
@@ -447,7 +446,7 @@ var Resolver = Class(function(scope) {
 
             // TODO for param validation, ignore the const part when comparing
             // against the arguments
-            value.id = (type.isConst ? 'const:' : '') + value.id;
+            value.id = (type.isConst ? 'const~' : '') + value.id;
             getSub.call(this, type, value);
 
             // Handles the final return type of a simple function
@@ -472,6 +471,8 @@ var Resolver = Class(function(scope) {
 
         } else {
             console.log('UNKNOWN', type);
+            this.scope.error(node, null, 'Unkown type "' + type.value + '".');
+            throw new Resolver.$TypeError();
         }
 
         if (parent) {

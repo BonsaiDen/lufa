@@ -168,6 +168,54 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
         this.resolver.validateExpressions();
     },
 
+    resolveName: function(node) {
+
+        for(var d in this.defines) {
+            if (this.defines.hasOwnProperty(d)) {
+
+                var defs = this.defines[d];
+                if (defs.hasOwnProperty(node.value)) {
+
+                    var name = defs[node.value];
+                    return this.resolver.typeFromNode(name);
+
+                    // TODO return object and add things like isConst and others
+                    if (name.type.isBuiltin) {
+
+                        //console.log(name);
+                        //var plain = builtinTypes.resolveFromType(name.type);
+                        //return {
+                            //id: plain.id,
+                            //isList: name.id === 'LIST',
+                            //isFunction: name.id === 'FUNCTION',
+                            //isConst: name.isConst || false,
+                            //type: plain,
+                            //params: name.params || null,
+                            //requiredParams: name.requiredParams || 0,
+                            //name: node.value
+                        //};
+
+                    } else {
+                        console.log('found used defined', name.name || name.value);
+                        // user defined type
+                    }
+
+                }
+
+            }
+        }
+
+        // TODO: Error due to missing name!
+        if (this.parentScope) {
+            return this.parentScope.resolveName(node);
+
+        } else {
+            this.error(node, null, 'Reference to undefined name "{first.name}" at {first.pos}.');
+            throw new Resolver.$NameError();
+        }
+
+    },
+
     nodes: {
 
         FUNCTION: function(func) {

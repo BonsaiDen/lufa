@@ -40,8 +40,8 @@ var KEYWORDS = {
     'scope': 'SCOPE',
     'ret': 'RETURN',
 
-    'true': 'BOOLEAN',
-    'false': 'BOOLEAN',
+    'true': 'BOOL',
+    'false': 'BOOL',
     'null': 'NULL',
 
     'from': 'FROM',

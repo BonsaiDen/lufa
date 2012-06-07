@@ -22,53 +22,55 @@
 
 var builtinTypes = require('./builtinTypes');
 
+var constEx = /const~/g;
+
 // Lists need to validate all sub types
 // maps needs to validate all sub types
 // hashes need to validate all keys to be compatible?
 var binaryOperatorTable = {
 
     'EQ': [
-        ['int', 'int', 'boolean'],
-        ['float', 'float', 'boolean'],
-        ['string', 'string', 'boolean']
+        ['int', 'int', 'bool'],
+        ['float', 'float', 'bool'],
+        ['string', 'string', 'bool']
     ],
 
     'NE': [
-        ['int', 'int', 'boolean'],
-        ['float', 'float', 'boolean'],
-        ['string', 'string', 'boolean']
+        ['int', 'int', 'bool'],
+        ['float', 'float', 'bool'],
+        ['string', 'string', 'bool']
     ],
 
     'LTE': [
-        ['int', 'int', 'boolean'],
-        ['int', 'float', 'boolean'],
-        ['float', 'int', 'boolean'],
-        ['float', 'float', 'boolean'],
-        ['string', 'string', 'boolean']
+        ['int', 'int', 'bool'],
+        ['int', 'float', 'bool'],
+        ['float', 'int', 'bool'],
+        ['float', 'float', 'bool'],
+        ['string', 'string', 'bool']
     ],
 
     'LT': [
-        ['int', 'int', 'boolean'],
-        ['int', 'float', 'boolean'],
-        ['float', 'int', 'boolean'],
-        ['float', 'float', 'boolean'],
-        ['string', 'string', 'boolean']
+        ['int', 'int', 'bool'],
+        ['int', 'float', 'bool'],
+        ['float', 'int', 'bool'],
+        ['float', 'float', 'bool'],
+        ['string', 'string', 'bool']
     ],
 
     'GTE': [
-        ['int', 'int', 'boolean'],
-        ['int', 'float', 'boolean'],
-        ['float', 'int', 'boolean'],
-        ['float', 'float', 'boolean'],
-        ['string', 'string', 'boolean']
+        ['int', 'int', 'bool'],
+        ['int', 'float', 'bool'],
+        ['float', 'int', 'bool'],
+        ['float', 'float', 'bool'],
+        ['string', 'string', 'bool']
     ],
 
     'GT': [
-        ['int', 'int', 'boolean'],
-        ['int', 'float', 'boolean'],
-        ['float', 'int', 'boolean'],
-        ['float', 'float', 'boolean'],
-        ['string', 'string', 'boolean']
+        ['int', 'int', 'bool'],
+        ['int', 'float', 'bool'],
+        ['float', 'int', 'bool'],
+        ['float', 'float', 'bool'],
+        ['string', 'string', 'bool']
     ],
 
     'PLUS': [
@@ -132,11 +134,11 @@ var binaryOperatorTable = {
     ],
 
     'AND': [
-        ['boolean', 'boolean', 'boolean']
+        ['bool', 'bool', 'bool']
     ],
 
     'OR': [
-        ['boolean', 'boolean', 'boolean']
+        ['bool', 'bool', 'bool']
     ]
 
 };
@@ -149,7 +151,7 @@ var unaryOperatorTable = {
     ],
 
     'NOT': [
-        ['boolean', 'boolean']
+        ['bool', 'bool']
     ],
 
     'PLUS': [
@@ -184,9 +186,48 @@ var unaryOperatorTable = {
 
 };
 
+// a to b
+var implicitCastTable = [
+    'int:float',
+    'float:int'
+];
+
+function resolveImplicitCast(a, b) {
+    a = a.replace(constEx, '');
+    b = b.replace(constEx, '');
+    return implicitCastTable.indexOf(a + ':' + b) !== -1;
+}
+
+// a to b
+var explicitCastTable = [
+    'bool:int',
+    'bool:string',
+    'int:bool',
+    'int:float',
+    'int:string',
+    'float:int',
+    'float:string',
+    'string:int',
+    'string:float',
+    'string:bool'
+];
+
+
+function resolveCast(a, b) {
+    a = a.replace(constEx, '');
+    b = b.replace(constEx, '');
+    return explicitCastTable.indexOf(a + ':' + b) !== -1;
+}
+
+
 function resolveBinary(op, a, b) {
 
     var types = binaryOperatorTable[op];
+
+    // Ignore constants
+    a = a.replace(constEx, '');
+    b = b.replace(constEx, '');
+
     for(var i = 0, l = types.length; i < l; i++) {
         if (types[i][0] === a && types[i][1] === b) {
             return builtinTypes.resolveFromId(types[i][2]);
@@ -201,6 +242,10 @@ function resolveBinary(op, a, b) {
 function resolveUnary(op, a) {
 
     var types = unaryOperatorTable[op];
+
+    // Ignore constants
+    a = a.replace(constEx, '');
+
     for(var i = 0, l = types.length; i < l; i++) {
         if (types[i][0] === a) {
             return builtinTypes.resolveFromId(types[i][1]);
@@ -213,6 +258,8 @@ function resolveUnary(op, a) {
 }
 
 module.exports = {
+    resolveCast: resolveCast,
+    resolveImplicitCast: resolveImplicitCast,
     resolveBinary: resolveBinary,
     resolveUnary: resolveUnary
 };

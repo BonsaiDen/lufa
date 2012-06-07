@@ -128,12 +128,13 @@ Parser.prototype = {
         t.col = token.col;
         t.value = token.value;
 
+        if (obj.hasOwnProperty('arity')) {
+            t.arity = obj.arity;
+        }
+
         // Pre parse some values
         if (token.id === 'TYPE') {
             t.type = token.value;
-
-        } else if (token.id === 'STRING' || token.id === 'BOOLEAN' || token.id === 'INTEGER' || token.id === 'FLOAT') {
-            t.arity = 'literal';
 
         } else if (token.id === 'IDENTIFIER') {
             t.arity = 'name';
@@ -416,6 +417,10 @@ Parser.prototype = {
 
         }
 
+        if (this.advanceIf('LEFT_PAREN')) {
+            this.error(token, 'Missing "<" before returning type for ' + token.type.value.toUpperCase());
+        }
+
         return token;
 
     },
@@ -482,6 +487,7 @@ Parser.prototype = {
                     param.vararg = true;
                 }
 
+                param.id = 'PARAMETER';
                 if (this.get().not('COMMA')) {
                     break;
                 }
@@ -507,7 +513,7 @@ Parser.prototype = {
         this.advance('TYPE');
         this.getType(param);
 
-        param.arity = 'parameter';
+        param.arity = 'declaration';
         param.name = this.get().value;
 
         this.advance('IDENTIFIER');

@@ -36,9 +36,9 @@ var types = {
 
     },
 
-    'BOOLEAN': {
+    'BOOL': {
 
-        id: 'boolean',
+        id: 'bool',
         methods: {
 
         },
@@ -121,7 +121,14 @@ var types = {
 };
 
 exports.resolveFromNode = function(node) {
-    return types[node.id];
+
+    if (types.hasOwnProperty(node.id)) {
+        return types[node.id];
+
+    } else {
+        throw new Error('Cannot map node id to builtin type: ' + node.id);
+    }
+
 };
 
 var builtinMap = {
@@ -131,7 +138,7 @@ var builtinMap = {
     'list': 'LIST',
     'hash': 'HASH',
     'map': 'MAP',
-    'boolean': 'BOOLEAN',
+    'bool': 'BOOL',
     'void': 'VOID'
 };
 

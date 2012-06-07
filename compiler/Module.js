@@ -77,39 +77,46 @@ var Module = Class(function(name, fileData) {
     },
 
     addWarning: function(first, second, msg) {
+
         console.log(leafy(msg).map({
+            first: this.nodeInfo(first),
+            second: this.nodeInfo(second)
+
         }).toString());
+
     },
 
     addError: function(first, second, msg) {
 
-        function nodeInfo(node) {
+        console.log(leafy(msg).map({
+            first: this.nodeInfo(first),
+            second: this.nodeInfo(second)
 
-            if (!node) {
-                return {
-                    id: 'null',
-                    type: 'null',
-                    value: 'null',
-                    pos: 'null'
-                };
+        }).toString());
 
-            } else {
-                return {
-                    id: node.id,
-                    type: node.type ? node.type.value : 'null',
-                    value: node.value,
-                    name: node.name || node.value,
-                    pos: 'line ' + node.line + ', col ' + node.col
-                };
+    },
 
-            }
+    nodeInfo: function (node) {
+
+        if (!node) {
+            return {
+                id: 'null',
+                type: 'null',
+                value: 'null',
+                pos: 'null'
+            };
+
+        } else {
+            return {
+                id: node.id,
+                type: node.type ? node.type.value : 'null',
+                value: node.value,
+                name: node.name || node.value,
+                pos: 'line ' + node.line + ', col ' + node.col
+            };
 
         }
 
-        console.log(leafy(msg).map({
-            first: nodeInfo(first),
-            second: nodeInfo(second)
-        }).toString());
     },
 
     compile: function(compiler) {
