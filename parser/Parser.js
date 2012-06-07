@@ -328,13 +328,13 @@ Parser.prototype = {
             value: token.value,
             isFunction: false,
             params: null,
-            builtin: true,
+            isBuiltin: true,
             sub: null
         };
 
         // User defined type
         if (token.is('IDENTIFIER')) {
-            token.type.builtin = false;
+            token.type.isBuiltin = false;
             return token;
         }
 
@@ -395,10 +395,25 @@ Parser.prototype = {
             this.error(token, 'Missing sub type for ' + token.type.value.toUpperCase());
         }
 
-        // Function type, we don't need param names here!
+        // Function type, we don't need param names here
         if (this.advanceIf('LEFT_PAREN')) {
             this.getFunctionParams(token.type, true);
             token.type.isFunction = true;
+        }
+
+        // Check for functions returning functions...
+        while (this.advanceIf('LT')) {
+
+            token.type = {
+                returns: token.type,
+                isBuiltin: true,
+                sub: null
+            };
+
+            this.advance('LEFT_PAREN');
+            this.getFunctionParams(token.type, true);
+            token.type.isFunction = true;
+
         }
 
         return token;
@@ -411,7 +426,7 @@ Parser.prototype = {
     getFunctionParams: function(dec, typeOnly) {
 
         var params = [],
-            requiredCount = 0;
+            requiredCount = -1;
 
         if (this.get().not('RIGHT_PAREN')) {
 
@@ -448,11 +463,11 @@ Parser.prototype = {
                     // Get the number of required parameters and error out
                     // when there's a required one after an optional one
                     if (param.right) {
-                        if (requiredCount === 0) {
+                        if (requiredCount === -1) {
                             requiredCount = params.length;
                         }
 
-                    } else if (requiredCount !== 0 ) {
+                    } else if (requiredCount !== -1 ) {
                         this.error('Required parameter after optional one.');
                     }
 
@@ -478,7 +493,7 @@ Parser.prototype = {
         }
 
         dec.params = params;
-        dec.requiredParams = requiredCount;
+        dec.requiredParams = requiredCount === - 1 ? params.length : requiredCount;
 
         this.advance('RIGHT_PAREN');
 

@@ -18,30 +18,46 @@
 #    add() + 2
 #    ret a + b
 #
-void repeat(string a, const int b = 0):
-    b = b * 2
+#void repeat(string a, const int b = 0):
+#    b = b * 2
 #
 #repeat('foo', 4, 2)
 #repeat()
 
-list[list[int]] numbers
-map[string, int] stuff
-
-numbers = [1, 2, 3]
+#list[list[int]] numbers
+#map[string, int] stuff
+#
+#numbers = [1, 2, 3]
 
 #stuff = { 'hello': 1 }
 
 #numbers += 2
 
-# TODO resolve signatures, right now this passes because both are void
-list[int](string, const int) e = repeat
-
-void(string) foo(string a):
-    ret
+list[int] < (string, const int) e = repeat
+#
+#    ret
 
 # TODO make this parseable... somehow AND BETTER SYNTAX
-void(string)(string a) fob
+int() < (string) foo(string a):
 
+    # compare this.id against parent.returnType.id
+    int() c(string a):
+
+        int b():
+            ret 0
+
+        ret b
+        
+    ret c
+
+
+# a function which takes a string and returns a function taking a string which returns a function returning an int
+#foo()
+int() < (string) < (string) l = foo
+
+
+# a function returning a function which takes a string and returns void
+void(string) < (int) fob
 
 #int ll = 'foo'.length
 

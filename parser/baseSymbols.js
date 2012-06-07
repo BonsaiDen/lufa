@@ -24,10 +24,8 @@ var symbolTable = require('./symbolTable');
 
 // Statements -----------------------------------------------------------------
 symbolTable.addStatement('BLOCK_START', function(parser) {
-    //new_scope();
     var a = parser.getStatementList();
     parser.advance('BLOCK_END');
-    //scope.pop();
     return a;
 });
 
