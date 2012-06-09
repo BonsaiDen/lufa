@@ -9,15 +9,21 @@ int a = 4.0 + 2
 # TODO warn about implicit conversion instead of erroring out in case of int / float or float / int
 int e = 4 % 5 * 4.0
 bool isGreater = (8 > 3 && 5 < 3)
-#
+++e
 string dasod = (string)(string)true
-###
-e += 5
-#
+
 int add(int a, int b):
-#    add() + 2
-#    ret a + b
-#
+    add() + 2
+    
+    if 4 > 3:
+        ret 'ff'
+
+    ret a + b
+
+void foo():
+    ret
+
+###
 void repeat(string a, const int b = 0):
     b = b * 2
 

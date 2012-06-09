@@ -28,7 +28,7 @@ var ForScope = Class(function(module, baseScope, parentScope, baseNode) {
 
     this.body = this.baseNode.body;
     this.indexes = this.baseNode.indexes;
-    this.type = 'forloop';
+    this.type = 'loop';
 
     this.returns = [];
 

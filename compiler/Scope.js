@@ -23,15 +23,18 @@ var Class = require('../lib/Class').Class,
     Resolver = require('./Resolver'),
     FunctionScope, ClassScope, ForScope;
 
-var Scope = Class(function(module, baseScope, parentScope, baseNode) {
+var Scope = Class(function(module, parentScope, baseNode) {
 
     this.type = 'block';
 
-    this.module = module;
-    this.baseScope = baseScope;
-    this.parentScope = parentScope;
-    this.baseNode = baseNode;
-    this.body = baseNode;
+    this.module = module; // the module this scope belongs to eventually
+    this.parentScope = parentScope; // the direct parent of this scope
+    this.baseNode = baseNode; // the base node (the token defining the scope header)
+    this.body = baseNode; // the body, this might be different for loops and functions
+
+    this.returnScope = null;
+    this.breakScope = null;
+    this.memberScope = null;
 
     this.level = parentScope ? parentScope.level + 1 : 0;
 
@@ -51,6 +54,34 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
     this.resolver = new Resolver(this);
 
 }, {
+
+    addScope: function(scope) {
+
+        this.scopes.push(scope);
+
+        // Find return / break / member scopes
+        var parent = this;
+        while(parent) {
+
+            if (scope.returnScope === null && parent.type === 'function' && this.type !== 'function') {
+                scope.returnScope = parent;
+            }
+
+            if (scope.breakScope  === null && parent.type === 'loop' && this.type !== 'loop') {
+                scope.breakScope  = parent;
+            }
+
+            if (scope.memberScope === null && parent.type === 'class' && this.type !== 'class') {
+                scope.memberScope = parent;
+            }
+
+            parent = parent.parentScope;
+
+        }
+
+        return scope;
+
+    },
 
     warning: function(first, second, msg) {
         this.module.addWarning(first, second, msg);
@@ -175,37 +206,13 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
 
                 var defs = this.defines[d];
                 if (defs.hasOwnProperty(node.value)) {
-
                     var name = defs[node.value];
                     return this.resolver.typeFromNode(name);
-
-                    // TODO return object and add things like isConst and others
-                    if (name.type.isBuiltin) {
-
-                        //console.log(name);
-                        //var plain = builtinTypes.resolveFromType(name.type);
-                        //return {
-                            //id: plain.id,
-                            //isList: name.id === 'LIST',
-                            //isFunction: name.id === 'FUNCTION',
-                            //isConst: name.isConst || false,
-                            //type: plain,
-                            //params: name.params || null,
-                            //requiredParams: name.requiredParams || 0,
-                            //name: node.value
-                        //};
-
-                    } else {
-                        console.log('found used defined', name.name || name.value);
-                        // user defined type
-                    }
-
                 }
 
             }
         }
 
-        // TODO: Error due to missing name!
         if (this.parentScope) {
             return this.parentScope.resolveName(node);
 
@@ -220,13 +227,13 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
 
         FUNCTION: function(func) {
             this.defineFunction(func);
-            this.scopes.push(new FunctionScope(this.module, this.baseScope, this, func));
+            this.addScope(new FunctionScope(this.module, this, func));
         },
 
         IF: function(iff) {
 
             this.conditions.push(iff.condition);
-            this.scopes.push(new Scope(this.module, this.baseScope, this, iff.body));
+            this.addScope(new Scope(this.module, this, iff.body));
 
             for(var i = 0, l = iff.branches.length; i < l; i++) {
 
@@ -234,19 +241,19 @@ var Scope = Class(function(module, baseScope, parentScope, baseNode) {
                     this.conditions.push(iff.condition);
                 }
 
-                this.scopes.push(new Scope(this.module, this.baseScope, this, iff.branches[i].body));
+                this.addScope(new Scope(this.module, this, iff.branches[i].body));
 
             }
 
         },
 
         SCOPE: function(scope) {
-            this.scopes.push(new Scope(this.module, this.baseScope, this, scope.body));
+            this.addScope(new Scope(this.module, this, scope.body));
         },
 
         // TODO Loops
         FOR: function(loop) {
-            this.scopes.push(new ForScope(this.module, this.baseScope, this, loop));
+            this.addScope(new ForScope(this.module, this, loop));
 
         },
 

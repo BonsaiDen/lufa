@@ -51,7 +51,7 @@ var Module = Class(function(name, fileData) {
 
     parseScopes: function() {
 
-        this.topScope = new Scope(this, null, null, this.ast);
+        this.topScope = new Scope(this, null, this.ast);
 
         this.scopes[0] = [this.topScope];
 

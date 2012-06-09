@@ -32,6 +32,7 @@ var FunctionScope = Class(function(module, baseScope, parentScope, baseNode) {
     this.parameters = this.baseNode.params;
     this.type = 'function';
 
+    this.returnScope = this;
     this.returns = [];
 
 }, Scope, {
@@ -49,6 +50,7 @@ var FunctionScope = Class(function(module, baseScope, parentScope, baseNode) {
                 this.defaults.push(param);
             }
 
+            // TODO warn on shadowing?
             //var topName;
             //if ((topName = this.parent.resolveName(param))) {
                 //this.warning(param, topName, 'Parameter "%name" at %pos shadows definition in outer scope at %opos');

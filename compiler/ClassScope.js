@@ -32,6 +32,7 @@ var ClassScope = Class(function(module, baseScope, parentScope, baseNode) {
 
     this.type = 'class';
     this.members = {};
+    this.memberScope = this;
 
 }, Scope, {
 

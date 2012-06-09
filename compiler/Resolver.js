@@ -39,6 +39,10 @@ var Resolver = Class(function(scope) {
 
     },
 
+    $TypeError: function() {
+
+    },
+
     validateDefaults: function() {
 
         var scope = this.scope;
@@ -57,11 +61,7 @@ var Resolver = Class(function(scope) {
 
         var scope = this.scope;
         for(var i = 0, l = scope.expressions.length; i < l; i++) {
-            var exp = scope.expressions[i],
-                rType = this.resolveExpression(exp);
-
-            //console.log('expression======', exp, rType);
-
+            this.resolveExpression(scope.expressions[i]);
         }
 
     },
@@ -70,20 +70,7 @@ var Resolver = Class(function(scope) {
 
         var scope = this.scope;
         for(var i = 0, l = scope.returns.length; i < l; i++) {
-
-            console.log('return');
-
-            var exp = scope.returns[i];
-            if (exp.right) {
-                var rType = this.resolveExpression(exp.right);
-
-            // TODO add default returns at a later point?
-            } else {
-                rType = 'void'; // TODO get void type from builtins
-            }
-
-            // TODO validate against function type
-
+            this.resolveExpression(scope.returns[i]);
         }
 
     },
@@ -110,8 +97,9 @@ var Resolver = Class(function(scope) {
 
         try {
 
-            // Declarations are handled like assignments
             var type = null;
+
+            // Declarations are handled like assignments
             if (node.arity === 'declaration') {
                 type = this.validateAssignment({
                     left: node,
@@ -170,11 +158,55 @@ var Resolver = Class(function(scope) {
 
                 break;
 
+            // Left needs to be a list and index an integer
+            // in case the list is constant
+            // try to figure out the value from the declaration
+            // and do a bounds check! :)
+            //
+            // List can also be a map, type of inner needs to match the first subtype
+            // of the map. If the map is const, we do a field lookup for the name.
+            case 'INDEX':
+                break;
+
+            // TODO move this and above into external functions
+            // to reduce code bloat
+            // Same as above, just more fancy
+            case 'RANGE':
+                break;
+
             case 'NAME':
                 value = this.scope.resolveName(node);
                 break;
 
+            // Is this ever the case? :O
             case 'IDENTIFIER':
+                break;
+
+            // Make sure the right side of the ret statement matches
+            // the function type
+            case 'RETURN':
+
+                base = this.scope.returnScope.baseNode;
+                left = this.getTypeDescription(base.type, base).returnType;
+
+                // TODO resolveFromId does not return a fully compatible object yet
+                // add baseClass to all types and unify data structure
+                if (!node.right) {
+                    right = builtinTypes.resolveFromId('void');
+
+                } else {
+                    right = this.resolveExpressionType(node.right);
+                }
+
+                if (this.compareTypes(left, right)) {
+                    value = left;
+                }
+
+                if (value === null) {
+                    this.scope.error(node, base, 'Invalid return of type "' + right.id + ' at {first.pos}. Type does not match parent function type "' + left.id + '" at {second.pos}.');
+                    throw new Resolver.$ExpressionError();
+                }
+
                 break;
 
             case 'VARIABLE':
@@ -182,16 +214,22 @@ var Resolver = Class(function(scope) {
                 value = this.typeFromNode(node);
                 break;
 
+            // use the member base to get the baseClass of the current class body
+            // then resolve the member on that baseClass
             case 'MEMBER':
                 // resolve from this.base
                 // check if this.base is class, otherwise error out due to @ outside of class
                 break;
 
+            // TODO base needs to have a baseClass and node.right needs to be
+            // a name / identifier. Then we can resolve the member from the base.type.memberTable
             case 'DOT':
                 base = this.resolveExpressionType(node.left);
+
                 value = this.resolveMember(base, node.right);
                 break;
 
+            // Make sure the cast is allowed and not useless (e.g. (int)4)
             case 'CAST':
 
                 if (node.type.isBuiltin) {
@@ -199,7 +237,6 @@ var Resolver = Class(function(scope) {
                     right = this.resolveExpressionType(node.right);
                     value = this.getTypeDescription(node.type);
 
-                    console.log(node);
                     if (this.compareTypes(right, value)) {
                         this.scope.warning(node, null, 'Usesless cast from "' + right.id + '" to "' + value.id + '" at {first.pos}.');
 
@@ -213,49 +250,45 @@ var Resolver = Class(function(scope) {
                 }
                 break;
 
+            // Make sure the object is callable and give the returnType as
+            // the result
             case 'CALL':
 
                 left = this.resolveExpressionType(node.left);
-                if (left) {
 
-                    if (!left.isFunction) {
-                        this.scope.error(node, null, 'Cannot call non-function type "' + left.id + '" at {first.pos}.');
-                        throw new Resolver.$ExpressionError();
+                if (!left.isFunction) {
+                    this.scope.error(node, null, 'Cannot call non-function type "' + left.id + '"  at {first.pos}.');
+                    throw new Resolver.$ExpressionError();
 
-                    // Validate arguments
-                    } else {
+                // Validate arguments
+                } else {
 
-                        // Required
-                        var i, arg, param;
-                        for(i = 0; i < Math.min(left.requiredParams, node.args.length); i++) {
-                            this.validateParameter(node.left, i, left.params[i], node.args[i]);
-                        }
+                    // TODO overhaul this based on the changes to the type descriptors
+                    // shouldn't be that hard!
+                    var i, arg, param;
+                    for(i = 0; i < Math.min(left.requiredParams, node.args.length); i++) {
+                        this.validateParameter(node.left, i, left.params[i], node.args[i]);
+                    }
 
-                        if (left.requiredParams > node.args.length) {
-                            this.scope.error(node.left, null, 'Parameter count mismatch, call to function "{first.name}" ({first.pos}) requires ' + left.requiredParams + ' arguments, but only ' + node.args.length + ' were supplied.');
-                        }
+                    if (left.requiredParams > node.args.length) {
+                        this.scope.error(node.left, null, 'Parameter count mismatch, call to function "{first.name}" ({first.pos}) requires ' + left.requiredParams + ' arguments, but only ' + node.args.length + ' were supplied.');
+                    }
 
-                        // Optional
-                        for(i = left.requiredParams; i < Math.min(left.params.length, node.args.length); i++) {
-                            this.validateParameter(node.left, i, left.params[i], node.args[i]);
-                        }
+                    // Optional
+                    for(i = left.requiredParams; i < Math.min(left.params.length, node.args.length); i++) {
+                        this.validateParameter(node.left, i, left.params[i], node.args[i]);
+                    }
 
-                        if (node.args.length > left.params.length) {
-                            this.scope.error(node.left, null, 'Parameter count mismatch, call to function "{first.name}" ({first.pos}) takes at maximum ' + left.params.length + ' arguments, but ' + node.args.length + ' were supplied.');
-                        }
-
-                        return left.type;
+                    if (node.args.length > left.params.length) {
+                        this.scope.error(node.left, null, 'Parameter count mismatch, call to function "{first.name}" ({first.pos}) takes at maximum ' + left.params.length + ' arguments, but ' + node.args.length + ' were supplied.');
                     }
 
                 }
 
-                if (value === null) {
-                    this.scope.error(node.left, null, 'Cannot call non-function type at {first.pos}.');
-                    throw new Resolver.$ExpressionError();
-                }
-
+                value = left.returnType;
                 break;
 
+            // Easy stuff :)
             case 'ASSIGN':
                 value = this.validateAssignment(node);
                 break;
