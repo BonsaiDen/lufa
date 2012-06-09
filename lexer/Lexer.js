@@ -445,7 +445,7 @@ function parse(input, tabWidth, stripComments) {
 
         // Integer
         } else if ((m = sub.match(intRegExp))) {
-            token.id = 'INTEGER';
+            token.id = 'INT';
             token.plain = m[0];
             token.value = parseInt(m[0]);
 

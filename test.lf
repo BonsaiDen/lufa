@@ -1,3 +1,29 @@
+void repeat(string a, const int b = 0):
+    b = b * 2
+
+void(string, const int) r = repeat
+
+
+int() < (string) foo(const string a = 'test'):
+
+    int() c(string a):
+
+        int b():
+            ret 0
+
+        ret b
+        
+    ret c
+
+
+int() < (string) < (const string) l = foo
+
+#const int e = 4 % 5 * 4.0
+#e += 2
+#++e
+
+###
+
 #import foo
 #import foo as l
 #from foo import data
@@ -7,9 +33,7 @@ string test = ('foo' * 4) + 'test'
 int a = 4.0 + 2
 
 # TODO warn about implicit conversion instead of erroring out in case of int / float or float / int
-int e = 4 % 5 * 4.0
 bool isGreater = (8 > 3 && 5 < 3)
-++e
 string dasod = (string)(string)true
 
 int add(int a, int b):
@@ -23,11 +47,15 @@ int add(int a, int b):
 void foo():
     ret
 
-###
+#for int i in 0...10:
+#    print(i)
+
+
 void repeat(string a, const int b = 0):
     b = b * 2
 
-#
+void(string, int) r = repeat
+
 #repeat('foo', 4, 2)
 #repeat()
 
@@ -44,30 +72,19 @@ list[int] < (string, const int) f = repeat
 #
 #    ret
 
-# TODO make this parseable... somehow AND BETTER SYNTAX
-int() < (string) foo(string a = 2):
-
-    # compare this.id against parent.returnType.id
-    int() c(string a):
-
-        int b():
-            ret 0
-
-        ret b
-        
-    ret c
-
-
-# a function which takes a string and returns a function taking a string which returns a function returning an int
-#foo()
-int() < (string) < (string) l = foo
 
 
 # a function returning a function which takes a string and returns void
 void(string) < (int) fob
 
 #int ll = 'foo'.length
+
+
+
+
 ###
+
+
 ###
 
 list b

@@ -20,14 +20,14 @@
   * THE SOFTWARE.
   */
 var Class = require('../lib/Class').Class,
-    operators = require('./operators'),
-    builtinTypes = require('./builtinTypes');
+    TypeCache = require('./TypeCache');
 
 
-
+// Static analyzer for lufa code ----------------------------------------------
+// ----------------------------------------------------------------------------
 var Resolver = Class(function(scope) {
     this.scope = scope;
-    this.types = {};
+    this.typeCache = new TypeCache();
 
 }, {
 
@@ -36,10 +36,6 @@ var Resolver = Class(function(scope) {
     },
 
     $NameError: function() {
-
-    },
-
-    $TypeError: function() {
 
     },
 
@@ -71,24 +67,6 @@ var Resolver = Class(function(scope) {
         var scope = this.scope;
         for(var i = 0, l = scope.returns.length; i < l; i++) {
             this.resolveExpression(scope.returns[i]);
-        }
-
-    },
-
-    // Right must be a object returned by the expression resolver
-    // Left must be a type object from a token
-    compareTypes: function(left, right) {
-
-        if (!right) {
-            return false;
-        }
-
-        if (left.isFunction || right.isFunction) {
-            return left.id === right.id;
-
-        } else {
-            var constEx = /const~/g;
-            return left.id.replace(constEx, '') === right.id.replace(constEx, '');
         }
 
     },
@@ -134,7 +112,8 @@ var Resolver = Class(function(scope) {
         var value = null,
             base = null,
             left = null,
-            right = null;
+            right = null,
+            i, l;
 
         switch(node.id) {
 
@@ -143,13 +122,13 @@ var Resolver = Class(function(scope) {
                 // The list type is determined by the first item in the list
                 // subsequent lists must be the same type or will raise errors
                 // if a list is mixed, it will match all assignments
-                for(var i = 0, l = node.items.length; i < l; i++) {
+                for(i = 0, l = node.items.length; i < l; i++) {
                     var item = node.items[i];
                     if (value === null) {
                         value = this.resolveExpressionType(item);
 
                     } else {
-                        if (!this.compareTypes(value, this.resolveExpressionType(item))) {
+                        if (!this.typeCache.compare(value, this.resolveExpressionType(item))) {
                             this.scope.error(node, null, 'Item #' + (i + 1) + ' in list does not have the expected type of "' + value.id + '".');
                         }
                     }
@@ -175,7 +154,7 @@ var Resolver = Class(function(scope) {
                 break;
 
             case 'NAME':
-                value = this.scope.resolveName(node);
+                value = this.typeCache.getFromToken(this.scope.resolveName(node));
                 break;
 
             // Is this ever the case? :O
@@ -187,18 +166,18 @@ var Resolver = Class(function(scope) {
             case 'RETURN':
 
                 base = this.scope.returnScope.baseNode;
-                left = this.getTypeDescription(base.type, base).returnType;
+                left = this.typeCache.getIdentifier(base.type, base).returnType;
 
                 // TODO resolveFromId does not return a fully compatible object yet
                 // add baseClass to all types and unify data structure
                 if (!node.right) {
-                    right = builtinTypes.resolveFromId('void');
+                    right = this.typeCache.getIdentifierFromArgs('void');
 
                 } else {
                     right = this.resolveExpressionType(node.right);
                 }
 
-                if (this.compareTypes(left, right)) {
+                if (this.typeCache.compare(left, right)) {
                     value = left;
                 }
 
@@ -211,7 +190,7 @@ var Resolver = Class(function(scope) {
 
             case 'VARIABLE':
             case 'PARAMETER':
-                value = this.typeFromNode(node);
+                value = this.typeCache.getFromToken(node);
                 break;
 
             // use the member base to get the baseClass of the current class body
@@ -235,12 +214,12 @@ var Resolver = Class(function(scope) {
                 if (node.type.isBuiltin) {
 
                     right = this.resolveExpressionType(node.right);
-                    value = this.getTypeDescription(node.type);
+                    value = this.typeCache.getIdentifier(node.type);
 
-                    if (this.compareTypes(right, value)) {
+                    if (this.typeCache.compare(right, value)) {
                         this.scope.warning(node, null, 'Usesless cast from "' + right.id + '" to "' + value.id + '" at {first.pos}.');
 
-                    } else if (!operators.resolveCast(right.id, value.id)) {
+                    } else if (!this.resolveCast(right, value)) {
                         this.scope.error(node, null, 'Cannot cast from "' + right.id + '" to "' + value.id + '" at {first.pos}.');
                         throw new Resolver.$ExpressionError();
                     }
@@ -265,7 +244,7 @@ var Resolver = Class(function(scope) {
 
                     // TODO overhaul this based on the changes to the type descriptors
                     // shouldn't be that hard!
-                    var i, arg, param;
+                    var arg, param;
                     for(i = 0; i < Math.min(left.requiredParams, node.args.length); i++) {
                         this.validateParameter(node.left, i, left.params[i], node.args[i]);
                     }
@@ -305,7 +284,7 @@ var Resolver = Class(function(scope) {
                     right = this.resolveExpressionType(node.right);
 
                     if (left && right) {
-                        value = operators.resolveBinary(node.id, left.id, right.id);
+                        value = this.resolveBinary(node.id, left, right);
                     }
 
                     if (value === null) {
@@ -316,19 +295,11 @@ var Resolver = Class(function(scope) {
                 } else if (node.arity === 'unary') {
 
                     right = this.resolveExpressionType(node.right);
-                    if (right) {
-                        value = operators.resolveUnary(node.id, right.id);
-                    }
-
-                    if (value === null) {
-                        this.scope.error(node, null, 'Incompatible types for unary {first.id} operator at {first.pos}, result for operand "' + right.id + '" is undefined.');
-                        throw new Resolver.$ExpressionError();
-                    }
-
+                    value = this.resolveUnary(node.id, right, node);
                     break;
 
                 } else if (node.arity === 'literal') {
-                    value = builtinTypes.resolveFromNode(node);
+                    value = this.typeCache.getIdentifierFromArgs(node.id.toLowerCase());
 
                 } else {
                     throw new Error('Unhandled expression type: ' + node.id + ':' + node.arity);
@@ -352,13 +323,13 @@ var Resolver = Class(function(scope) {
         if (left && right) {
 
             if (node.value) {
-                value = operators.resolveBinary(node.value, left.id, right.id);
+                value = this.resolveBinary(node.value, left, right);
                 if (value === null) {
                     this.scope.error(node, null, 'Invalid types for {first.value} assignment at {first.pos}, result for operands "' + left.id + ':' + right.id + '" is undefined.');
                     throw new Resolver.$ExpressionError();
                 }
 
-            } else if (this.compareTypes(left, right)) {
+            } else if (this.typeCache.compare(left, right)) {
                 value = left;
             }
 
@@ -367,8 +338,8 @@ var Resolver = Class(function(scope) {
             }
 
             // Allow implicit conversion, but raise a warning
-            if (operators.resolveImplicitCast(right.id, left.id)) {
-                this.scope.error(node.left, null, 'Implicit cast of "' + right.id + '" to "' + left.id + '" at {first.pos}.');
+            if (this.resolveImplicitCast(right, left)) {
+                this.scope.error(node.left, null, 'Implicit cast from "' + right.id + '" to "' + left.id + '" at {first.pos}.');
                 value = left;
             }
 
@@ -385,145 +356,264 @@ var Resolver = Class(function(scope) {
 
     validateParameter: function(node, i, param, arg) {
 
-        param = builtinTypes.resolveFromType(param.type);
+        //param = builtinTypes.resolveFromType(param.type);
         arg = this.resolveExpressionType(arg);
 
-        if (!this.compareTypes(arg, param)) {
+        if (!this.typeCache.compare(arg, param)) {
             this.scope.error(node, null, 'Argument #' + (i + 1) + ' for call of function "{first.name}" has invalid type. "' + param.id + '" is required, but "' + arg.id + '" was supplied.');
         }
 
     },
 
-    typeFromNode: function(node) {
 
-        if (this.types.hasOwnProperty(node.name)) {
-            return this.types[node.name];
-        }
-
-        this.types[node.name] = this.getTypeDescription(node.type, node);
-        //console.log(node.name, '=',this.types[node.name].id);
-        return this.types[node.name];
-
-    },
-
-    getTypeDescription: function(type, node, parent, getReturn) {
-
-        // Parses parameters for functions
-        function getParams(params, value) {
-
-            var paramList = [],
-                paramIds = [];
-
-            for(var i = 0, l = params.length; i < l; i++) {
-                var param = this.getTypeDescription(params[i].type);
-                paramList.push(param);
-                paramIds.push(param.id);
-            }
-
-            value.id += '(' + paramIds.join(',') + ')';
-            value.params = paramList;
-
-        }
-
-        // Parses sub type for lists, hashes and maps
-        function getSub(type, value) {
-
-            if (type.sub) {
-
-                var subTypes = [],
-                    subTypeIds = [];
-
-                for(var i = 0, l = type.sub.length; i < l; i++) {
-                    var subType = this.getTypeDescription(type.sub[i]);
-                    subTypes.push(subType);
-                    subTypeIds.push(subType.id);
-                }
-
-                value.id += '[' + subTypeIds.join(',') + ']';
-                value.sub = subTypes;
-
-            } else {
-                value.sub = null;
-            }
-
-        }
+    // Resolving of operators and casts ---------------------------------------
+    resolveUnary: function(op, right, node) {
 
         var value = null;
+        if (right) {
 
-        // Function definitions
-        if (node && node.id === 'FUNCTION') {
+            var types = Resolver.$unaryOperatorTable[op],
+                id = TypeCache.$cleanId(right.id);
 
-            var ret = this.getTypeDescription(type);
-            value = {
-                id: ret.id, // this is a plain id for comparison
-                returnType: ret,
-                isFunction: true,
-                isConst: type.isConst || false,
-                isList: false
-            };
+            for(var i = 0, l = types.length; i < l; i++) {
+                if (types[i][0] === id) {
 
-            value.id += '<function';
-            getParams.call(this, node.params, value);
+                    // Found a compatible type, now see whether we're trying to modify a const
+                    var def = types[i];
+                    if (right.isConst && def[2] === true) {
+                        this.scope.error(node, null, 'Invalid unary {first.id} operator at {first.pos}, operand "' + right.id + '" is constant.');
+                    }
 
-        // Builtin types
-        } else if (type.isBuiltin && !type.hasOwnProperty('returns')) {
+                    value = this.typeCache.getIdentifierFromArgs(def[1]);
+                    break;
 
-            var plain = builtinTypes.resolveFromType(type);
-
-            value = {
-                id: plain.id,
-                isFunction: type.isFunction || false,
-                isConst: type.isConst || false,
-                isList: plain.id === 'list'
-            };
-
-            // TODO for param validation, ignore the const part when comparing
-            // against the arguments
-            value.id = (type.isConst ? 'const~' : '') + value.id;
-            getSub.call(this, type, value);
-
-            // Handles the final return type of a simple function
-            if (type.isFunction && !getReturn) {
-                value.returnType = this.getTypeDescription(type, null, null, true);
-                getParams.call(this, type.params, value);
+                }
             }
 
-        // Function return types
-        } else if (type.isFunction && type.returns != null) {
-
-            value = {
-                id: 'function', // this is a plain id for comparison
-                returnType: null,
-                isFunction: true,
-                isConst: type.isConst || false,
-                isList: false
-            };
-
-            value.returnType = this.getTypeDescription(type.returns, null, value);
-            getParams.call(this, type.params, value);
-
-        } else {
-            console.log('UNKNOWN', type);
-            this.scope.error(node, null, 'Unkown type "' + type.value + '".');
-            throw new Resolver.$TypeError();
         }
 
-        if (parent) {
-            parent.id = value.id + '<' + parent.id;
+        if (value === null) {
+            this.scope.error(node, null, 'Incompatible types for unary {first.id} operator at {first.pos}, result for operand "' + right.id + '" is undefined.');
+            throw new Resolver.$ExpressionError();
         }
 
         return value;
 
     },
 
-    resolveMember: function(struct, property) {
+    resolveBinary: function(op, left, right) {
 
-        console.log(struct, property.value);
-        // checks stuff!
+        var types = Resolver.$binaryOperatorTable[op],
+            lid = TypeCache.$cleanId(left.id),
+            rid = TypeCache.$cleanId(right.id);
 
-    }
+        for(var i = 0, l = types.length; i < l; i++) {
+            if (types[i][0] === lid && types[i][1] === rid) {
+                return this.typeCache.getIdentifierFromArgs(types[i][2]);
+            }
+        }
+
+        // TODO throw here
+        return null;
+
+    },
+
+    resolveCast: function(right, left) {
+        return Resolver.$explicitCastTable.indexOf(TypeCache.$cleanId(right.id) + ':' + TypeCache.$cleanId(left.id)) !== -1;
+    },
+
+    resolveImplicitCast: function(right, left) {
+        return Resolver.$implicitCastTable.indexOf(TypeCache.$cleanId(right.id) + ':' + TypeCache.$cleanId(left.id)) !== -1;
+    },
+
+
+    // Operator compatibility tables ------------------------------------------
+    // ------------------------------------------------------------------------
+    $binaryOperatorTable: {
+
+        'EQ': [
+            ['int', 'int', 'bool'],
+            ['float', 'float', 'bool'],
+            ['string', 'string', 'bool']
+        ],
+
+        'NE': [
+            ['int', 'int', 'bool'],
+            ['float', 'float', 'bool'],
+            ['string', 'string', 'bool']
+        ],
+
+        'LTE': [
+            ['int', 'int', 'bool'],
+            ['int', 'float', 'bool'],
+            ['float', 'int', 'bool'],
+            ['float', 'float', 'bool'],
+            ['string', 'string', 'bool']
+        ],
+
+        'LT': [
+            ['int', 'int', 'bool'],
+            ['int', 'float', 'bool'],
+            ['float', 'int', 'bool'],
+            ['float', 'float', 'bool'],
+            ['string', 'string', 'bool']
+        ],
+
+        'GTE': [
+            ['int', 'int', 'bool'],
+            ['int', 'float', 'bool'],
+            ['float', 'int', 'bool'],
+            ['float', 'float', 'bool'],
+            ['string', 'string', 'bool']
+        ],
+
+        'GT': [
+            ['int', 'int', 'bool'],
+            ['int', 'float', 'bool'],
+            ['float', 'int', 'bool'],
+            ['float', 'float', 'bool'],
+            ['string', 'string', 'bool']
+        ],
+
+        'PLUS': [
+            ['int', 'int', 'int'],
+            ['int', 'float', 'float'],
+            ['float', 'int', 'float'],
+            ['float', 'float', 'float'],
+            ['string', 'string', 'string']
+        ],
+
+        'MINUS': [
+            ['int', 'int', 'int'],
+            ['int', 'float', 'float'],
+            ['float', 'int', 'float'],
+            ['float', 'float', 'float']
+        ],
+
+        'EXP': [
+            ['int', 'int', 'int'],
+            ['int', 'float', 'float'],
+            ['float', 'int', 'float'],
+            ['float', 'float', 'float']
+        ],
+
+        'MUL': [
+            ['int', 'int', 'int'],
+            ['int', 'float', 'float'],
+            ['float', 'int', 'float'],
+            ['float', 'float', 'float'],
+            ['string', 'int', 'string']
+        ],
+
+        'DIV_INT': [
+            ['int', 'int', 'int'],
+            ['int', 'float', 'int'],
+            ['float', 'int', 'int'],
+            ['float', 'float', 'int']
+        ],
+
+        'DIV': [
+            ['int', 'int', 'int'],
+            ['int', 'float', 'float'],
+            ['float', 'int', 'float'],
+            ['float', 'float', 'float']
+        ],
+
+        'MOD': [
+            ['int', 'int', 'int']
+        ],
+
+        'BIT_AND': [
+            ['int', 'int', 'int']
+        ],
+
+        'BIT_OR': [
+            ['int', 'int', 'int']
+        ],
+
+        'BIT_XOR': [
+            ['int', 'int', 'int']
+        ],
+
+        'AND': [
+            ['bool', 'bool', 'bool']
+        ],
+
+        'OR': [
+            ['bool', 'bool', 'bool']
+        ],
+
+        'ELLIPSIS': [
+            ['int', 'int']
+        ]
+
+    },
+
+    // The first entry is the left side, the second one the resultant type of the expression
+    $unaryOperatorTable: {
+
+        'BIT_NOT': [
+            ['int', 'int']
+        ],
+
+        'NOT': [
+            ['bool', 'bool']
+        ],
+
+        'PLUS': [
+            ['int', 'int'],
+            ['float', 'float']
+        ],
+
+        'MINUS': [
+            ['int', 'int'],
+            ['float', 'float']
+        ],
+
+        'DECREMENT': [
+            ['int', 'int', true],
+            ['float', 'float', true]
+        ],
+
+        'INCREMENT': [
+            ['int', 'int', true],
+            ['float', 'float', true]
+        ],
+
+        // Left is the expression to be cast, right the cast (type)
+        'CAST': [
+            ['int', 'string'],
+            ['int', 'float'],
+            ['float', 'string'],
+            ['float', 'int'],
+            ['string', 'int'],
+            ['string', 'float']
+        ]
+
+    },
+
+    // a to b
+    $implicitCastTable: [
+        'int:float',
+        'float:int'
+    ],
+
+    // a to b
+    $explicitCastTable: [
+        'bool:int',
+        'bool:string',
+        'int:bool',
+        'int:float',
+        'int:string',
+        'float:int',
+        'float:string',
+        'string:int',
+        'string:float',
+        'string:bool'
+    ]
 
 });
+
 
 module.exports = Resolver;
 

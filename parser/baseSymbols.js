@@ -139,7 +139,7 @@ symbolTable.addPrefix('DELETE');
 
 
 // Literals -------------------------------------------------------------------
-symbolTable.addLiteral('INTEGER');
+symbolTable.addLiteral('INT');
 symbolTable.addLiteral('FLOAT');
 symbolTable.addLiteral('STRING');
 symbolTable.addLiteral('BOOL');

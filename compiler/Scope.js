@@ -206,8 +206,8 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
                 var defs = this.defines[d];
                 if (defs.hasOwnProperty(node.value)) {
-                    var name = defs[node.value];
-                    return this.resolver.typeFromNode(name);
+                    return defs[node.value];
+                    //return this.resolver.typeFromNode(name);
                 }
 
             }
