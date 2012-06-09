@@ -76,47 +76,12 @@ var Module = Class(function(name, fileData) {
 
     },
 
-    addWarning: function(first, second, msg) {
-
-        console.log(leafy(msg).map({
-            first: this.nodeInfo(first),
-            second: this.nodeInfo(second)
-
-        }).toString());
-
+    addWarning: function(node, msg, data) {
+        this.warnings.push([node, leafy(msg).map(data).toString()]);
     },
 
-    addError: function(first, second, msg) {
-
-        console.log(leafy(msg).map({
-            first: this.nodeInfo(first),
-            second: this.nodeInfo(second)
-
-        }).toString());
-
-    },
-
-    nodeInfo: function (node) {
-
-        if (!node) {
-            return {
-                id: 'null',
-                type: 'null',
-                value: 'null',
-                pos: 'null'
-            };
-
-        } else {
-            return {
-                id: node.id,
-                type: node.type ? node.type.value : 'null',
-                value: node.value,
-                name: node.name || node.value,
-                pos: 'line ' + node.line + ', col ' + node.col
-            };
-
-        }
-
+    addError: function(node, msg, data) {
+        this.errors.push([node, leafy(msg).map(data).toString()]);
     },
 
     compile: function(compiler) {
@@ -127,6 +92,11 @@ var Module = Class(function(name, fileData) {
 
     validate: function() {
 
+        console.log('valid');
+
+        this.warnings.length = 0;
+        this.errors.length = 0;
+
         for(var level in this.scopes) {
             if (this.scopes.hasOwnProperty(level)) {
 
@@ -136,6 +106,39 @@ var Module = Class(function(name, fileData) {
                 }
 
             }
+        }
+
+        function sort(a, b) {
+            if (a[0].line < b[0].line) {
+                return -1;
+
+            } else if (a[0].line > b[0].line) {
+                return 1;
+
+            } else {
+                return a[0].col - b[0].col;
+            }
+        }
+
+        this.warnings.sort(sort);
+        this.errors.sort(sort);
+
+        for(var i = 0, l = this.warnings.length; i < l; i++) {
+            console.log(leafy('Warning at line {line}, col {col}: {msg}').map({
+                line: this.warnings[i][0].line,
+                col: this.warnings[i][0].col,
+                msg: this.warnings[i][1]
+
+            }).toString());
+        }
+
+        for(var i = 0, l = this.errors.length; i < l; i++) {
+            console.log(leafy('Errors at line {line}, col {col}: {msg}').map({
+                line: this.errors[i][0].line,
+                col: this.errors[i][0].col,
+                msg: this.errors[i][1]
+
+            }).toString());
         }
 
     },

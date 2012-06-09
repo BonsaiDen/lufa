@@ -23,6 +23,7 @@ var Class = require('../lib/Class').Class,
     Resolver = require('./Resolver'),
     FunctionScope, ClassScope, ForScope;
 
+
 var Scope = Class(function(module, parentScope, baseNode) {
 
     this.type = 'block';
@@ -83,12 +84,12 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
     },
 
-    warning: function(first, second, msg) {
-        this.module.addWarning(first, second, msg);
+    warning: function(node, msg, data) {
+        this.module.addWarning(node, msg, data);
     },
 
-    error: function(first, second, msg) {
-        this.module.addError(first, second, msg);
+    error: function(node, msg, data) {
+        this.module.addError(node, msg, data);
     },
 
     compile: function() {
@@ -100,7 +101,9 @@ var Scope = Class(function(module, parentScope, baseNode) {
         for(var i = 0, l = body.length; i < l; i++) {
 
             if (returned) {
-                this.error(node, body[i], 'Dead code after return statement at {node.pos}, {original.info} at {original.pos} is never reached.');
+                this.error(node, 'Dead code after return statement, {next} is never reached.', {
+                    next: body[i]
+                });
                 break;
             }
 
@@ -144,13 +147,18 @@ var Scope = Class(function(module, parentScope, baseNode) {
                 if (this.defines[i].hasOwnProperty(node.name)) {
 
                     var original = this.defines[i][node.name];
-                    this.error(node, original, '"{first.name}" was already '
-                                            + (original.isImport ? 'imported into the' : 'defined in the')
-                                            + ' current scope at {second.pos} as type of {second.type}, but {first.pos} tries to '
-                                            + (original.isImport ? 're-import' : 're-defined')
-                                            + ' it as type of {first.type}.');
+                    this.error(node, '"{name}" was already {mode} current scope at {line}, col {col} at type of but is being {remode} as type of {retype}.', {
+                        name: original.name,
+                        mode: (original.isImport ? 'imported into the' : 'defined in the'),
+                        line: original.line,
+                        col: original.col,
+                        type: original.type, // TODO !?!?!
+                        remode: (node.isImport ? 're-import' : 're-defined'),
+                        retype: node.type // TODO ???
+                    });
 
                     return i;
+
                 }
 
             }
@@ -207,7 +215,6 @@ var Scope = Class(function(module, parentScope, baseNode) {
                 var defs = this.defines[d];
                 if (defs.hasOwnProperty(node.value)) {
                     return defs[node.value];
-                    //return this.resolver.typeFromNode(name);
                 }
 
             }
@@ -217,8 +224,12 @@ var Scope = Class(function(module, parentScope, baseNode) {
             return this.parentScope.resolveName(node);
 
         } else {
-            this.error(node, null, 'Reference to undefined name "{first.name}" at {first.pos}.');
+            this.error(node, 'Reference to undefined name "{name}".', {
+                name: node.name
+            });
+
             throw new Resolver.$NameError();
+
         }
 
     },
@@ -276,7 +287,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
             }
 
             if (functionScope === null) {
-                this.error(ret, null, 'Return statement outside of function at %pos.');
+                this.error(ret, 'Return statement outside of function.');
             }
 
             return true;
@@ -297,6 +308,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
             // Detect hash declaration and create user types
             if (v.type.value === 'hash' && v.right && v.right.id === 'HASHDEC') {
 
+                // TODO user type stuff!!!!!!111111111111111
                 this.defineType(v);
 
                 for(var i in v.right.fields) {

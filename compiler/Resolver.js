@@ -39,6 +39,22 @@ var Resolver = Class(function(scope) {
 
     },
 
+    warning: function(node, msg, data) {
+        this.scope.warning(node, msg, data);
+    },
+
+    error: function(node, msg, data, silent) {
+
+        this.scope.error(node, msg, data);
+        if (!silent) {
+            throw new Resolver.$ExpressionError();
+        }
+
+    },
+
+
+    // Basic validation -------------------------------------------------------
+    // ------------------------------------------------------------------------
     validateDefaults: function() {
 
         var scope = this.scope;
@@ -129,7 +145,11 @@ var Resolver = Class(function(scope) {
 
                     } else {
                         if (!this.typeCache.compare(value, this.resolveExpressionType(item))) {
-                            this.scope.error(node, null, 'Item #' + (i + 1) + ' in list does not have the expected type of "' + value.id + '".');
+                            this.error(node, 'Item at index {index} in list does not have the expected type of "{type}"', {
+                                index: i,
+                                type: value.id
+
+                            }, true);
                         }
                     }
 
@@ -182,8 +202,10 @@ var Resolver = Class(function(scope) {
                 }
 
                 if (value === null) {
-                    this.scope.error(node, base, 'Invalid return of type "' + right.id + ' at {first.pos}. Type does not match parent function type "' + left.id + '" at {second.pos}.');
-                    throw new Resolver.$ExpressionError();
+                    this.error(node, 'Invalid return of type "{rid}". Type does not match parent function type "{lid}"', {
+                        rid: right.id,
+                        lid: left.id
+                    });
                 }
 
                 break;
@@ -217,11 +239,16 @@ var Resolver = Class(function(scope) {
                     value = this.typeCache.getIdentifier(node.type);
 
                     if (this.typeCache.compare(right, value)) {
-                        this.scope.warning(node, null, 'Usesless cast from "' + right.id + '" to "' + value.id + '" at {first.pos}.');
+                        this.warning(node, 'Cast from "{rid}" to "{lid}" has no effect', {
+                            rid: right.id,
+                            lid: left.id
+                        });
 
                     } else if (!this.resolveCast(right, value)) {
-                        this.scope.error(node, null, 'Cannot cast from "' + right.id + '" to "' + value.id + '" at {first.pos}.');
-                        throw new Resolver.$ExpressionError();
+                        this.error(node, 'Cannot cast from "{rid}" to "{lid}"', {
+                            rid: right.id,
+                            lid: left.id
+                        });
                     }
 
                 } else {
@@ -236,8 +263,9 @@ var Resolver = Class(function(scope) {
                 left = this.resolveExpressionType(node.left);
 
                 if (!left.isFunction) {
-                    this.scope.error(node, null, 'Cannot call non-function type "' + left.id + '"  at {first.pos}.');
-                    throw new Resolver.$ExpressionError();
+                    this.error(node, 'Cannot call non-function type "{lid}"', {
+                        lid: left.id
+                    });
 
                 // Validate arguments
                 } else {
@@ -250,7 +278,12 @@ var Resolver = Class(function(scope) {
                     }
 
                     if (left.requiredParams > node.args.length) {
-                        this.scope.error(node.left, null, 'Parameter count mismatch, call to function "{first.name}" ({first.pos}) requires ' + left.requiredParams + ' arguments, but only ' + node.args.length + ' were supplied.');
+                        this.error(node.left, 'Parameter count mismatch, call to function "{name}" requires at least {required} arguments, but only {given} are given', {
+                            name: node.left.name,
+                            required: left.requiredParams,
+                            given: node.args.length
+
+                        }, true);
                     }
 
                     // Optional
@@ -259,7 +292,12 @@ var Resolver = Class(function(scope) {
                     }
 
                     if (node.args.length > left.params.length) {
-                        this.scope.error(node.left, null, 'Parameter count mismatch, call to function "{first.name}" ({first.pos}) takes at maximum ' + left.params.length + ' arguments, but ' + node.args.length + ' were supplied.');
+                        this.error(node.left, 'Parameter count mismatch, call to function "{name}" takes at maximum {max} arguments, but a total of {given} are given', {
+                            name: node.left.name,
+                            required: left.params.length,
+                            given: node.args.length
+
+                        }, true);
                     }
 
                 }
@@ -288,8 +326,11 @@ var Resolver = Class(function(scope) {
                     }
 
                     if (value === null) {
-                        this.scope.error(node, null, 'Incompatible types for {first.id} operator at {first.pos}, result for operands "' + left.id + ':' + right.id + '" is undefined.');
-                        throw new Resolver.$ExpressionError();
+                        this.error(node, 'Incompatible types for {op} operator, result for operands "{lid}" = "{rid}" is undefined',{
+                            op: node.id,
+                            lid: left.id,
+                            rid: right.id
+                        });
                     }
 
                 } else if (node.arity === 'unary') {
@@ -325,8 +366,12 @@ var Resolver = Class(function(scope) {
             if (node.value) {
                 value = this.resolveBinary(node.value, left, right);
                 if (value === null) {
-                    this.scope.error(node, null, 'Invalid types for {first.value} assignment at {first.pos}, result for operands "' + left.id + ':' + right.id + '" is undefined.');
-                    throw new Resolver.$ExpressionError();
+                    this.error(node, 'Invalid types for {op} assignment, result for operands "{lid}" = "{rid}" is undefined', {
+                        op: node.value,
+                        lid: left.id,
+                        rid: right.id
+
+                    });
                 }
 
             } else if (this.typeCache.compare(left, right)) {
@@ -334,20 +379,29 @@ var Resolver = Class(function(scope) {
             }
 
             if (left.isConst && node.left.id !== 'PARAMETER') {
-                this.scope.error(node.left, null, 'Cannot assign to constant "{first.name}" at {first.pos}.');
+                this.error(node.left, 'Cannot assign to constant "{name}"', {
+                    name: node.left.name || node.left.value
+
+                }, true);
             }
 
             // Allow implicit conversion, but raise a warning
             if (this.resolveImplicitCast(right, left)) {
-                this.scope.error(node.left, null, 'Implicit cast from "' + right.id + '" to "' + left.id + '" at {first.pos}.');
+                this.error(node.left, 'Implicit cast from "{rid}" to "{lid}"', {
+                    lid: left.id,
+                    rid: right.id
+
+                }, true);
                 value = left;
             }
 
         }
 
         if (value === null) {
-            this.scope.error(node.left, null, 'Invalid assignment at {first.pos}, types do not match: ' + right.id + ' != ' + left.id + '.');
-            throw new Resolver.$ExpressionError();
+            this.error(node.left, 'Invalid assignment, incompatible types "{lid}" = "{rid}"', {
+                lid: left.id,
+                rid: right.id
+            });
         }
 
         return value;
@@ -360,7 +414,13 @@ var Resolver = Class(function(scope) {
         arg = this.resolveExpressionType(arg);
 
         if (!this.typeCache.compare(arg, param)) {
-            this.scope.error(node, null, 'Argument #' + (i + 1) + ' for call of function "{first.name}" has invalid type. "' + param.id + '" is required, but "' + arg.id + '" was supplied.');
+            this.error(node, 'Argument #{index} for call of function "name" has invalid type. "{param}" is required, but "{arg}" was supplied', {
+                index: i + 1,
+                name: node.name,
+                param: param.id,
+                arg: arg.id
+
+            }, true);
         }
 
     },
@@ -381,7 +441,11 @@ var Resolver = Class(function(scope) {
                     // Found a compatible type, now see whether we're trying to modify a const
                     var def = types[i];
                     if (right.isConst && def[2] === true) {
-                        this.scope.error(node, null, 'Invalid unary {first.id} operator at {first.pos}, operand "' + right.id + '" is constant.');
+                        this.error(node, 'Invalid unary {op} operator, operand "{rid}" is constant', {
+                            op: node.id,
+                            rid: right.id
+
+                        }, true);
                     }
 
                     value = this.typeCache.getIdentifierFromArgs(def[1]);
@@ -393,8 +457,10 @@ var Resolver = Class(function(scope) {
         }
 
         if (value === null) {
-            this.scope.error(node, null, 'Incompatible types for unary {first.id} operator at {first.pos}, result for operand "' + right.id + '" is undefined.');
-            throw new Resolver.$ExpressionError();
+            this.error(node, 'Incompatible types for unary {op} operator at {first.pos}, result for operand "{right}" is undefined', {
+                op: node.id,
+                rid: right.id
+            });
         }
 
         return value;

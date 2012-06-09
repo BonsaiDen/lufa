@@ -18,9 +18,9 @@ int() < (string) foo(const string a = 'test'):
 
 int() < (string) < (const string) l = foo
 
-#const int e = 4 % 5 * 4.0
-#e += 2
-#++e
+const int e = 4 % 5 * 4.0
+e += 2
+++e
 
 ###
 
