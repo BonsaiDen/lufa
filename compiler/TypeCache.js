@@ -205,7 +205,13 @@ var TypeCache = Class(function() {
     // Get a list identifier for the given sub type ---------------------------
     // Sub type can be another identifier or plain string
     getListIdentifier: function(sub) {
-
+        return {
+            id: sub ? 'list[' + sub.id + ']' : 'list',
+            isFunction: false,
+            isConst: false,
+            isList: true,
+            typeClass: this._resolveTypeClass('list')
+        };
     },
 
     $constEx: /const~/g,
@@ -300,7 +306,8 @@ var TypeCache = Class(function() {
                 isFunction: true,
                 isConst: type.isConst || false, // TODO does this need to be node.isConst?
                 isList: false,
-                typeClass: this._resolveTypeClass('$function')
+                typeClass: this._resolveTypeClass('$function'),
+                requiredParams: node.requiredParams
             };
 
             value.id += '<function';
@@ -318,6 +325,7 @@ var TypeCache = Class(function() {
                 value.typeClass = this._resolveTypeClass('$function');
                 value.id += '<function';
                 value.returnType = this.getIdentifier(type, null, null, true);
+                value.requiredParams = type.requiredParams;
 
                 getParams(type.params, value);
 

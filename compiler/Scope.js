@@ -147,14 +147,12 @@ var Scope = Class(function(module, parentScope, baseNode) {
                 if (this.defines[i].hasOwnProperty(node.name)) {
 
                     var original = this.defines[i][node.name];
-                    this.error(node, '"{name}" was already {mode} current scope at {line}, col {col} at type of but is being {remode} as type of {retype}.', {
+                    this.error(node, 'Re-definition of "{name}", originally {mode} at {line}, col {col} as type of {type}', {
                         name: original.name,
-                        mode: (original.isImport ? 'imported into the' : 'defined in the'),
+                        mode: (original.isImport ? 'imported' : 'defined'),
                         line: original.line,
                         col: original.col,
-                        type: original.type, // TODO !?!?!
-                        remode: (node.isImport ? 're-import' : 're-defined'),
-                        retype: node.type // TODO ???
+                        type: original.type // TODO !?!?!
                     });
 
                     return i;

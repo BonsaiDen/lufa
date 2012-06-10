@@ -87,6 +87,10 @@ var Resolver = Class(function(scope) {
 
     },
 
+    validateForLoops: function() {
+
+    },
+
     resolveExpression: function(node) {
 
         try {
@@ -139,6 +143,7 @@ var Resolver = Class(function(scope) {
                 // subsequent lists must be the same type or will raise errors
                 // if a list is mixed, it will match all assignments
                 for(i = 0, l = node.items.length; i < l; i++) {
+
                     var item = node.items[i];
                     if (value === null) {
                         value = this.resolveExpressionType(item);
@@ -155,6 +160,8 @@ var Resolver = Class(function(scope) {
 
                 }
 
+                // TODO what to do with empty lists?!
+                value = this.typeCache.getListIdentifier(value);
                 break;
 
             // Left needs to be a list and index an integer
@@ -226,7 +233,6 @@ var Resolver = Class(function(scope) {
             // a name / identifier. Then we can resolve the member from the base.type.memberTable
             case 'DOT':
                 base = this.resolveExpressionType(node.left);
-
                 value = this.resolveMember(base, node.right);
                 break;
 
@@ -259,50 +265,7 @@ var Resolver = Class(function(scope) {
             // Make sure the object is callable and give the returnType as
             // the result
             case 'CALL':
-
-                left = this.resolveExpressionType(node.left);
-
-                if (!left.isFunction) {
-                    this.error(node, 'Cannot call non-function type "{lid}"', {
-                        lid: left.id
-                    });
-
-                // Validate arguments
-                } else {
-
-                    // TODO overhaul this based on the changes to the type descriptors
-                    // shouldn't be that hard!
-                    var arg, param;
-                    for(i = 0; i < Math.min(left.requiredParams, node.args.length); i++) {
-                        this.validateParameter(node.left, i, left.params[i], node.args[i]);
-                    }
-
-                    if (left.requiredParams > node.args.length) {
-                        this.error(node.left, 'Parameter count mismatch, call to function "{name}" requires at least {required} arguments, but only {given} are given', {
-                            name: node.left.name,
-                            required: left.requiredParams,
-                            given: node.args.length
-
-                        }, true);
-                    }
-
-                    // Optional
-                    for(i = left.requiredParams; i < Math.min(left.params.length, node.args.length); i++) {
-                        this.validateParameter(node.left, i, left.params[i], node.args[i]);
-                    }
-
-                    if (node.args.length > left.params.length) {
-                        this.error(node.left, 'Parameter count mismatch, call to function "{name}" takes at maximum {max} arguments, but a total of {given} are given', {
-                            name: node.left.name,
-                            required: left.params.length,
-                            given: node.args.length
-
-                        }, true);
-                    }
-
-                }
-
-                value = left.returnType;
+                value = this.validateFunctionCall(node);
                 break;
 
             // Easy stuff :)
@@ -364,13 +327,13 @@ var Resolver = Class(function(scope) {
         if (left && right) {
 
             if (node.value) {
+
                 value = this.resolveBinary(node.value, left, right);
                 if (value === null) {
                     this.error(node, 'Invalid types for {op} assignment, result for operands "{lid}" = "{rid}" is undefined', {
                         op: node.value,
                         lid: left.id,
                         rid: right.id
-
                     });
                 }
 
@@ -392,7 +355,6 @@ var Resolver = Class(function(scope) {
                     rid: right.id
 
                 }, true);
-                value = left;
             }
 
         }
@@ -408,13 +370,57 @@ var Resolver = Class(function(scope) {
 
     },
 
+    validateFunctionCall: function(node) {
+
+        var left = this.resolveExpressionType(node.left);
+
+        if (!left.isFunction) {
+            this.error(node, 'Cannot call non-function type "{lid}"', {
+                lid: left.id
+            });
+
+        } else {
+
+            var arg, param,
+                args = node.args,
+                count = args.length,
+                name = node.left.name || node.left.value;
+
+            if (left.requiredParams > count) {
+                this.error(node.left, 'Parameter count mismatch. Call to function "{name}" with {given} arguments, but requires at least {required}', {
+                    name: name,
+                    required: left.requiredParams,
+                    given: count
+
+                }, true);
+            }
+
+            if (count > left.params.length) {
+                this.error(node.left, 'Parameter count mismatch. Call of function "{name}" with {given} arguments, but takes at maximum {max}', {
+                    name: name,
+                    max: left.params.length,
+                    given: count
+
+                }, true);
+            }
+
+            // TODO remove const stuff in error messages?
+            for(var i = 0; i < Math.min(Math.max(left.requiredParams, count), left.params.length); i++) {
+                this.validateParameter(node.left, i, left.params[i], args[i]);
+            }
+
+        }
+
+        return left.returnType;
+
+    },
+
     validateParameter: function(node, i, param, arg) {
 
-        //param = builtinTypes.resolveFromType(param.type);
         arg = this.resolveExpressionType(arg);
 
         if (!this.typeCache.compare(arg, param)) {
-            this.error(node, 'Argument #{index} for call of function "name" has invalid type. "{param}" is required, but "{arg}" was supplied', {
+            this.error(node, 'Argument mismatch type does not match requirment: "{arg}" != "{param}"', {
                 index: i + 1,
                 name: node.name,
                 param: param.id,
@@ -474,8 +480,18 @@ var Resolver = Class(function(scope) {
             rid = TypeCache.$cleanId(right.id);
 
         for(var i = 0, l = types.length; i < l; i++) {
-            if (types[i][0] === lid && types[i][1] === rid) {
-                return this.typeCache.getIdentifierFromArgs(types[i][2]);
+
+            var type = types[i];
+            if (type[0] === lid && type[1] === rid) {
+
+                // TODO move to TypeCache and abstract in a better way
+                if (typeof type[2] === 'string') {
+                    return this.typeCache.getIdentifierFromArgs(type[2]);
+
+                } else {
+                    return this.typeCache.getIdentifier(type[2]);
+                }
+
             }
         }
 
@@ -610,7 +626,14 @@ var Resolver = Class(function(scope) {
         ],
 
         'ELLIPSIS': [
-            ['int', 'int']
+            ['int', 'int', {
+                value: 'list',
+                isBuiltin: true,
+                sub: [{
+                    isBuiltin: true,
+                    value: 'int'
+                }]
+            }]
         ]
 
     },

@@ -85,29 +85,11 @@ var Module = Class(function(name, fileData) {
     },
 
     compile: function(compiler) {
+
         this.resolveImports(compiler);
-        // validate types?
         this.validate();
-    },
 
-    validate: function() {
-
-        console.log('valid');
-
-        this.warnings.length = 0;
-        this.errors.length = 0;
-
-        for(var level in this.scopes) {
-            if (this.scopes.hasOwnProperty(level)) {
-
-                var scopes = this.scopes[level];
-                for(var i = 0, l = scopes.length; i < l; i++) {
-                    scopes[i].validate();
-                }
-
-            }
-        }
-
+        // Error reporting
         function sort(a, b) {
             if (a[0].line < b[0].line) {
                 return -1;
@@ -123,7 +105,8 @@ var Module = Class(function(name, fileData) {
         this.warnings.sort(sort);
         this.errors.sort(sort);
 
-        for(var i = 0, l = this.warnings.length; i < l; i++) {
+        var i, l;
+        for(i = 0, l = this.warnings.length; i < l; i++) {
             console.log(leafy('Warning at line {line}, col {col}: {msg}').map({
                 line: this.warnings[i][0].line,
                 col: this.warnings[i][0].col,
@@ -132,13 +115,28 @@ var Module = Class(function(name, fileData) {
             }).toString());
         }
 
-        for(var i = 0, l = this.errors.length; i < l; i++) {
-            console.log(leafy('Errors at line {line}, col {col}: {msg}').map({
+        for(i = 0, l = this.errors.length; i < l; i++) {
+            console.log(leafy('Error at line {line}, col {col}: {msg}').map({
                 line: this.errors[i][0].line,
                 col: this.errors[i][0].col,
                 msg: this.errors[i][1]
 
             }).toString());
+        }
+
+    },
+
+    validate: function() {
+
+        for(var level in this.scopes) {
+            if (this.scopes.hasOwnProperty(level)) {
+
+                var scopes = this.scopes[level];
+                for(var i = 0, l = scopes.length; i < l; i++) {
+                    scopes[i].validate();
+                }
+
+            }
         }
 
     },
