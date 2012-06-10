@@ -193,6 +193,7 @@ var TypeCache = Class(function() {
             isFunction: isFunction || false,
             isConst: isConst || false,
             isList: id === 'list',
+            isName: false,
             typeClass: this._resolveTypeClass(id)
         };
 
@@ -210,6 +211,7 @@ var TypeCache = Class(function() {
             isFunction: false,
             isConst: false,
             isList: true,
+            isName: false,
             typeClass: this._resolveTypeClass('list')
         };
     },
@@ -244,6 +246,7 @@ var TypeCache = Class(function() {
         }
 
         this.cached[node.name] = this.getIdentifier(node.type, node);
+        this.cached[node.name].isName = true;
         return this.cached[node.name];
 
     },
@@ -306,6 +309,7 @@ var TypeCache = Class(function() {
                 isFunction: true,
                 isConst: type.isConst || false, // TODO does this need to be node.isConst?
                 isList: false,
+                isName: false,
                 typeClass: this._resolveTypeClass('$function'),
                 requiredParams: node.requiredParams
             };
@@ -339,7 +343,8 @@ var TypeCache = Class(function() {
                 returnType: null,
                 isFunction: true,
                 isConst: type.isConst || false,
-                isList: false
+                isList: false,
+                isName: false
             };
 
             value.returnType = this.getIdentifier(type.returns, null, value);

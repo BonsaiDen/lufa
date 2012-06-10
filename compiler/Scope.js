@@ -203,6 +203,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
     validate: function() {
         this.resolver.validateDefaults();
         this.resolver.validateExpressions();
+        this.resolver.validateConditions();
     },
 
     resolveName: function(node) {
@@ -263,7 +264,6 @@ var Scope = Class(function(module, parentScope, baseNode) {
         // TODO Loops
         FOR: function(loop) {
             this.addScope(new ForScope(this.module, this, loop));
-
         },
 
         CLASS: function() {

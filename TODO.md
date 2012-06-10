@@ -26,5 +26,6 @@
     - since const map / lists CANNOT be changed
 
 - list comprehensions need their own scope
-- VALIDATE function arguments!!!!!!!!!
+- Parse for loop headers extra
+- validate all conditions to be interpretable as bool results, this should do implicit casts of integers and other things? and warn about those
 

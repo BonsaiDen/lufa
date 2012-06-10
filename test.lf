@@ -16,11 +16,16 @@ int() < (string) foo(const string a = 'test'):
     ret c
 
 
+if 4 > 2:
+    if 5:
+        
+
 int() < (string) < (const string) l = foo
 
 const int e = 4 % 5 * 4.0
 e += 2
 ++e
+
 
 int e = repeat(3, 'test', 2)
 

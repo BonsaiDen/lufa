@@ -125,17 +125,17 @@ symbolTable.addSymbol('RIGHT_CURLY');
 
 
 // Prefix Operators -----------------------------------------------------------
-symbolTable.addPrefix('INCREMENT');
-symbolTable.addPrefix('DECREMENT');
+symbolTable.addPrefix('INCREMENT', null, true);
+symbolTable.addPrefix('DECREMENT', null, true);
 symbolTable.addPrefix('MINUS');
 symbolTable.addPrefix('PLUS');
 symbolTable.addPrefix('ELLIPSIS');
 symbolTable.addPrefix('NOT');
 symbolTable.addPrefix('CAST');
 symbolTable.addPrefix('BIT_NOT');
-symbolTable.addPrefix('MEMBER');
-symbolTable.addPrefix('NEW');
-symbolTable.addPrefix('DELETE');
+symbolTable.addPrefix('MEMBER', null, true);
+symbolTable.addPrefix('NEW', null, true);
+symbolTable.addPrefix('DELETE', null, true);
 
 
 // Literals -------------------------------------------------------------------

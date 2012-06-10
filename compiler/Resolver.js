@@ -28,6 +28,7 @@ var Class = require('../lib/Class').Class,
 var Resolver = Class(function(scope) {
     this.scope = scope;
     this.typeCache = new TypeCache();
+    this.expressionHasSideEffect = false;
 
 }, {
 
@@ -87,11 +88,48 @@ var Resolver = Class(function(scope) {
 
     },
 
+    validateConditions: function() {
+
+        var bool = this.typeCache.getIdentifierFromArgs('bool'),
+            scope = this.scope;
+
+        for(var i = 0, l = scope.conditions.length; i < l; i++) {
+
+            var node = scope.conditions[i],
+                right = this.resolveExpression(node).type;
+
+            if (!this.typeCache.compare(right, bool)) {
+
+                if (this.resolveImplicitCast(right, bool)) {
+                    this.warning(node, 'Implicit cast from "{rid}" to "{lid}" in condition', {
+                        lid: bool.id,
+                        rid: right.id
+
+                    });
+
+                } else {
+                    this.error(node, 'Invalid condition, result of expression is "{rid}" and not "bool"', {
+                        rid: right.id
+
+                    }, true);
+                }
+
+            }
+
+        }
+
+    },
+
     validateForLoops: function() {
 
     },
 
+
+    // Type resolving ---------------------------------------------------------
+    // ------------------------------------------------------------------------
     resolveExpression: function(node) {
+
+        this.expressionHasSideEffect = false;
 
         try {
 
@@ -109,7 +147,8 @@ var Resolver = Class(function(scope) {
             }
 
             return {
-                type: type
+                type: type,
+                hasSideEffect: this.expressionHasSideEffect
             };
 
         } catch(err) {
@@ -181,6 +220,7 @@ var Resolver = Class(function(scope) {
                 break;
 
             case 'NAME':
+                this.expressionHasSideEffect = true;
                 value = this.typeCache.getFromToken(this.scope.resolveName(node));
                 break;
 
@@ -251,7 +291,7 @@ var Resolver = Class(function(scope) {
                         });
 
                     } else if (!this.resolveCast(right, value)) {
-                        this.error(node, 'Cannot cast from "{rid}" to "{lid}"', {
+                        this.error(node, 'Invalid cast from "{rid}" to "{lid}"', {
                             rid: right.id,
                             lid: left.id
                         });
@@ -319,6 +359,8 @@ var Resolver = Class(function(scope) {
 
     validateAssignment: function(node) {
 
+        this.expressionHasSideEffect = true;
+
         var value = null,
             left = this.resolveExpressionType(node.left),
             right = this.resolveExpressionType(node.right);
@@ -342,7 +384,7 @@ var Resolver = Class(function(scope) {
             }
 
             if (left.isConst && node.left.id !== 'PARAMETER') {
-                this.error(node.left, 'Cannot assign to constant "{name}"', {
+                this.error(node.left, 'Assignment to constant "{name}"', {
                     name: node.left.name || node.left.value
 
                 }, true);
@@ -350,11 +392,11 @@ var Resolver = Class(function(scope) {
 
             // Allow implicit conversion, but raise a warning
             if (this.resolveImplicitCast(right, left)) {
-                this.error(node.left, 'Implicit cast from "{rid}" to "{lid}"', {
+                this.warning(node.left, 'Implicit cast from "{rid}" to "{lid}" in assignment', {
                     lid: left.id,
                     rid: right.id
 
-                }, true);
+                });
             }
 
         }
@@ -372,8 +414,9 @@ var Resolver = Class(function(scope) {
 
     validateFunctionCall: function(node) {
 
-        var left = this.resolveExpressionType(node.left);
+        this.expressionHasSideEffect = true;
 
+        var left = this.resolveExpressionType(node.left);
         if (!left.isFunction) {
             this.error(node, 'Cannot call non-function type "{lid}"', {
                 lid: left.id
@@ -387,7 +430,7 @@ var Resolver = Class(function(scope) {
                 name = node.left.name || node.left.value;
 
             if (left.requiredParams > count) {
-                this.error(node.left, 'Parameter count mismatch. Call to function "{name}" with {given} arguments, but requires at least {required}', {
+                this.error(node, 'Parameter count mismatch. Call to function "{name}" with {given} arguments, but requires at least {required}', {
                     name: name,
                     required: left.requiredParams,
                     given: count
@@ -396,7 +439,7 @@ var Resolver = Class(function(scope) {
             }
 
             if (count > left.params.length) {
-                this.error(node.left, 'Parameter count mismatch. Call of function "{name}" with {given} arguments, but takes at maximum {max}', {
+                this.error(node.args[left.params.length], 'Parameter count mismatch. Call of function "{name}" with {given} arguments, but takes at maximum {max}', {
                     name: name,
                     max: left.params.length,
                     given: count
@@ -406,7 +449,7 @@ var Resolver = Class(function(scope) {
 
             // TODO remove const stuff in error messages?
             for(var i = 0; i < Math.min(Math.max(left.requiredParams, count), left.params.length); i++) {
-                this.validateParameter(node.left, i, left.params[i], args[i]);
+                this.validateParameter(node, node.left, i, left.params[i], args[i]);
             }
 
         }
@@ -415,12 +458,12 @@ var Resolver = Class(function(scope) {
 
     },
 
-    validateParameter: function(node, i, param, arg) {
+    validateParameter: function(call, node, i, param, arg) {
 
         arg = this.resolveExpressionType(arg);
 
         if (!this.typeCache.compare(arg, param)) {
-            this.error(node, 'Argument mismatch type does not match requirment: "{arg}" != "{param}"', {
+            this.error(call.args[i], 'Argument type mismatch "{arg}" != "{param}"', {
                 index: i + 1,
                 name: node.name,
                 param: param.id,
@@ -446,12 +489,20 @@ var Resolver = Class(function(scope) {
 
                     // Found a compatible type, now see whether we're trying to modify a const
                     var def = types[i];
-                    if (right.isConst && def[2] === true) {
-                        this.error(node, 'Invalid unary {op} operator, operand "{rid}" is constant', {
-                            op: node.id,
-                            rid: right.id
 
-                        }, true);
+                    // Unary has side effect
+                    if (def[2] === true) {
+
+                        this.expressionHasSideEffect = true;
+
+                        if (right.isConst) {
+                            this.error(node, 'Modification of constant "{rid}" by unary {op} operator', {
+                                op: node.id,
+                                rid: right.id
+
+                            }, true);
+                        }
+
                     }
 
                     value = this.typeCache.getIdentifierFromArgs(def[1]);
@@ -505,7 +556,8 @@ var Resolver = Class(function(scope) {
     },
 
     resolveImplicitCast: function(right, left) {
-        return Resolver.$implicitCastTable.indexOf(TypeCache.$cleanId(right.id) + ':' + TypeCache.$cleanId(left.id)) !== -1;
+        var cast = TypeCache.$cleanId(right.id) + ':' + TypeCache.$cleanId(left.id);
+        return Resolver.$implicitCastTable.indexOf(cast) !== -1;
     },
 
 
@@ -684,7 +736,10 @@ var Resolver = Class(function(scope) {
     // a to b
     $implicitCastTable: [
         'int:float',
-        'float:int'
+        'int:bool',
+        'float:int',
+        'float:bool',
+        'string:bool'
     ],
 
     // a to b

@@ -116,7 +116,7 @@ var Module = Class(function(name, fileData) {
         }
 
         for(i = 0, l = this.errors.length; i < l; i++) {
-            console.log(leafy('Error at line {line}, col {col}: {msg}').map({
+            console.log(leafy('Err {line}:{col}: {msg}').map({
                 line: this.errors[i][0].line,
                 col: this.errors[i][0].col,
                 msg: this.errors[i][1]
