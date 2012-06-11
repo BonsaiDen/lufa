@@ -368,6 +368,12 @@ var Resolver = Class(function(scope) {
         // Check assignment operator
         if (left && right) {
 
+            // Assignment to self
+            if (node.left.name === node.right.name) {
+                this.warning(node.left, 'Self-assignment without effect', {
+                });
+            }
+
             if (node.value) {
 
                 value = this.resolveBinary(node.value, left, right);
@@ -379,7 +385,12 @@ var Resolver = Class(function(scope) {
                     });
                 }
 
+            // Plain assignments
             } else if (this.typeCache.compare(left, right)) {
+                value = left;
+
+            // Special case for empty lists
+            } else if (left.isList && right.id === 'list') {
                 value = left;
             }
 
@@ -395,7 +406,6 @@ var Resolver = Class(function(scope) {
                 this.warning(node.left, 'Implicit cast from "{rid}" to "{lid}" in assignment', {
                     lid: left.id,
                     rid: right.id
-
                 });
             }
 
@@ -439,7 +449,7 @@ var Resolver = Class(function(scope) {
             }
 
             if (count > left.params.length) {
-                this.error(node.args[left.params.length], 'Parameter count mismatch. Call of function "{name}" with {given} arguments, but takes at maximum {max}', {
+                this.error(node.args[left.params.length], 'Parameter count mismatch. Call of function "{name}" with {given} arguments, but takes {max} at maximum', {
                     name: name,
                     max: left.params.length,
                     given: count

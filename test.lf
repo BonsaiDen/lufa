@@ -26,6 +26,8 @@ const int e = 4 % 5 * 4.0
 e += 2
 ++e
 
+m = 4
+int m
 
 int e = repeat(3, 'test', 2)
 

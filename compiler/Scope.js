@@ -213,7 +213,18 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
                 var defs = this.defines[d];
                 if (defs.hasOwnProperty(node.value)) {
-                    return defs[node.value];
+
+                    var original = defs[node.value];
+                    if (node.line < original.line || node.line === original.line && node.col < original.col) {
+                        this.error(node, 'Reference to name "{name}" before definition at line {line}, col {col}', {
+                            name: node.name,
+                            line: original.line,
+                            col: original.col
+                        });
+                    }
+
+                    return original;
+
                 }
 
             }
@@ -223,7 +234,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
             return this.parentScope.resolveName(node);
 
         } else {
-            this.error(node, 'Reference to undefined name "{name}".', {
+            this.error(node, 'Reference to undefined name "{name}"', {
                 name: node.name
             });
 

@@ -147,6 +147,7 @@ symbolTable.addLiteral('NULL');
 
 symbolTable.addSymbol('IDENTIFIER').nud = function() {
     this.id = 'NAME';
+    this.name = this.value;
     this.arity = 'name';
     return this;
 };
