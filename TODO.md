@@ -19,7 +19,8 @@
 - TODO howto casts lists?
 
 
-- add mixed type
+- add mixed type? 
+- Handle null
 - resolve index and ranges and their returns
 
     - if their op is const also validate the range
@@ -27,5 +28,10 @@
 
 - list comprehensions need their own scope
 - Parse for loop headers extra, these should all return a isList type
-- validate all conditions to be interpretable as bool results, this should do implicit casts of integers and other things? and warn about those
 - make @ have a higher binding power than other stuff or so...
+
+- classes
+- interfaces
+- resolve private / protected access
+
+- iterator comprehensions...

@@ -212,9 +212,9 @@ var Scope = Class(function(module, parentScope, baseNode) {
             if (this.defines.hasOwnProperty(d)) {
 
                 var defs = this.defines[d];
-                if (defs.hasOwnProperty(node.value)) {
+                if (defs.hasOwnProperty(node.name || node.value)) {
 
-                    var original = defs[node.value];
+                    var original = defs[node.name || node.value];
                     if (node.line < original.line || node.line === original.line && node.col < original.col) {
                         this.error(node, 'Reference to name "{name}" before definition at line {line}, col {col}', {
                             name: node.name,
@@ -235,13 +235,17 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
         } else {
             this.error(node, 'Reference to undefined name "{name}"', {
-                name: node.name
+                name: node.name || node.value
             });
 
             throw new Resolver.$NameError();
 
         }
 
+    },
+
+    addComprehensionScope: function(comp) {
+        return this.addScope(new ForScope(this.module, this, comp));
     },
 
     nodes: {
@@ -306,8 +310,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
         IMPORT: function(imp) {
 
             for(var i = 0, l = imp.names.length; i < l; i++) {
-                var name = imp.names[i];
-                this.defineImport(name);
+                this.defineImport(imp.names[i]);
             }
 
         },

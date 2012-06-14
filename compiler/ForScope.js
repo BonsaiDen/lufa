@@ -28,12 +28,10 @@ var ForScope = Class(function(module, baseScope, parentScope, baseNode) {
 
     this.body = this.baseNode.body;
     this.indexes = this.baseNode.indexes;
+    this.iterator = this.baseNode.iterator;
     this.type = 'loop';
 
     this.returns = [];
-
-    // The iterator exists in the parent scope
-    this.parentScope.expressions.push(this.baseNode.iterator);
 
 }, Scope, {
 
@@ -41,12 +39,21 @@ var ForScope = Class(function(module, baseScope, parentScope, baseNode) {
 
         // Define indexes inside the loops body scope
         for(var i = 0, l = this.indexes.length; i < l; i++) {
+
             var index = this.indexes[i];
-            this.defineName(index);
+            if (index.arity === 'declaration') {
+                this.defineName(index);
+            }
+
         }
 
         return Scope.compile(this);
 
+    },
+
+    validate: function() {
+        Scope.validate(this);
+        this.resolver.validateForLoop(this);
     }
 
 });

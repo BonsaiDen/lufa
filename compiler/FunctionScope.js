@@ -68,8 +68,7 @@ var FunctionScope = Class(function(module, baseScope, parentScope, baseNode) {
     },
 
     validate: function() {
-        this.resolver.validateDefaults();
-        this.resolver.validateExpressions();
+        Scope.validate(this);
         this.resolver.validateReturns();
     }
 

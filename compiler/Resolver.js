@@ -120,7 +120,85 @@ var Resolver = Class(function(scope) {
 
     },
 
-    validateForLoops: function() {
+    validateForLoop: function(loop) {
+
+        try {
+            this.validateIterator(loop.indexes, loop.iterator);
+
+        } catch(e) {
+            if (e instanceof Resolver.$NameError) {
+                console.log('name error');
+            }
+        }
+
+    },
+
+    validateIterator: function(indexes, iter) {
+
+        var indexA, indexB, right;
+
+        // Check the iterator
+        try {
+            right = this.resolveExpression(iter).type;
+
+        } catch(e) {
+            this.error(iter, 'Invalid iterator', {});
+        }
+
+        // Lists
+        if (indexes.length === 1) {
+
+            if (!right.isList) {
+                this.error(iter, 'Invalid type for list iteration: "{type}"', {
+                    type: right.id
+                });
+
+            } else {
+
+                indexA = this.typeCache.getFromToken(this.scope.resolveName(indexes[0]));
+                if (!this.typeCache.compare(right.sub[0], indexA)) {
+                    this.error(indexes[0], 'Incompatible type for iteration index on list "{lid}" != "{rid}"', {
+                        rid: right.sub[0].id,
+                        lid: indexA.id
+                    });
+                }
+
+            }
+
+        // Maps
+        } else if (indexes.length === 2) {
+
+            if (!right.isMap) {
+                this.error(iter, 'Invalid type for map iteration: "{type}"', {
+                    type: right.id
+                });
+
+            } else {
+                indexA = this.typeCache.getFromToken(this.scope.resolveName(indexes[0]));
+                indexB = this.typeCache.getFromToken(this.scope.resolveName(indexes[1]));
+
+                if (!this.typeCache.compare(right.sub[0], indexA)) {
+                    this.error(indexes[0], 'Incompatible type for iteration key on map "{lid}" != "{rid}"', {
+                        rid: right.sub[0].id,
+                        lid: indexA.id
+                    });
+                }
+
+                if (!this.typeCache.compare(right.sub[1], indexB)) {
+                    this.error(indexes[1], 'Incompatible type for iteration value on map "{lid}" != "{rid}"', {
+                        rid: right.sub[1].id,
+                        lid: indexB.id
+                    });
+                }
+
+            }
+
+        // More than 3 indexes
+        } else {
+            this.error(iter, 'Too many indexes for iteration on "{type}"', {
+                type: right.id
+            });
+        }
 
     },
 
@@ -172,7 +250,8 @@ var Resolver = Class(function(scope) {
             base = null,
             left = null,
             right = null,
-            i, l;
+            i, l,
+            scope = null;
 
         switch(node.id) {
 
@@ -189,7 +268,7 @@ var Resolver = Class(function(scope) {
 
                     } else {
                         if (!this.typeCache.compare(value, this.resolveExpressionType(item))) {
-                            this.error(node, 'Item at index {index} in list does not have the expected type of "{type}"', {
+                            this.error(item, 'Item at index {index} in list does not have the expected type of "{type}"', {
                                 index: i,
                                 type: value.id
 
@@ -226,6 +305,37 @@ var Resolver = Class(function(scope) {
 
             // Is this ever the case? :O
             case 'IDENTIFIER':
+                break;
+
+            case 'LIST_COMPREHENSION':
+
+                // Create a sub scope of the parent on the fly
+                scope = this.scope.addComprehensionScope(node);
+                scope.compile();
+                scope.validate();
+
+                // Type
+                if (node.returnIndexes.length === 1) {
+
+                    value = scope.resolver.resolveExpression(node.returnIndexes[0]);
+
+                    // Return a list type
+                    if (value) {
+                        value = this.typeCache.getListIdentifier(value.type);
+
+                    } else {
+                        this.error(node.returnIndexes[0], 'Invalid return for list comprehension', {});
+                    }
+
+                // Map
+                } else if (node.returnIndexes.length === 2) {
+
+                } else {
+
+                }
+
+                console.log('what list?', value);
+
                 break;
 
             // Make sure the right side of the ret statement matches
@@ -265,6 +375,7 @@ var Resolver = Class(function(scope) {
             // use the member base to get the baseClass of the current class body
             // then resolve the member on that baseClass
             case 'MEMBER':
+                // left should be class instance(plain types = classes too) or hash
                 // resolve from this.base
                 // check if this.base is class, otherwise error out due to @ outside of class
                 break;

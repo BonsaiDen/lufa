@@ -201,7 +201,7 @@ Parser.prototype = {
 
             if (e.isAssignment || e.id === 'CALL'
                 || e.id === 'DECREMENT' || e.id === 'INCREMENT'
-                || e.id === 'NEW' || e.id === 'DELETE') {
+                || e.id === 'NEW' || e.id === 'DELETE' || e.id === 'LIST_COMPREHENSION') {
 
                 hasSideEffect = true;
                 break;

@@ -193,6 +193,7 @@ var TypeCache = Class(function() {
             isFunction: isFunction || false,
             isConst: isConst || false,
             isList: id === 'list',
+            isMap: id === 'map',
             isName: false,
             typeClass: this._resolveTypeClass(id)
         };
@@ -204,15 +205,16 @@ var TypeCache = Class(function() {
     },
 
     // Get a list identifier for the given sub type ---------------------------
-    // Sub type can be another identifier or plain string
     getListIdentifier: function(sub) {
         return {
             id: sub ? 'list[' + sub.id + ']' : 'list',
             isFunction: false,
             isConst: false,
+            isMap: false,
             isList: true,
             isName: false,
-            typeClass: this._resolveTypeClass('list')
+            typeClass: this._resolveTypeClass('list'),
+            sub: [sub]
         };
     },
 
@@ -309,6 +311,7 @@ var TypeCache = Class(function() {
                 isFunction: true,
                 isConst: type.isConst || false, // TODO does this need to be node.isConst?
                 isList: false,
+                isMap: false,
                 isName: false,
                 typeClass: this._resolveTypeClass('$function'),
                 requiredParams: node.requiredParams
@@ -344,6 +347,7 @@ var TypeCache = Class(function() {
                 isFunction: true,
                 isConst: type.isConst || false,
                 isList: false,
+                isMap: false,
                 isName: false
             };
 

@@ -68,7 +68,8 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
         this.items = elements;
 
     } else {
-        this.body = elements[0];
+        this.returnIndexes = elements;
+        this.body = [];
     }
 
     parser.advance('RIGHT_BRACKET');
