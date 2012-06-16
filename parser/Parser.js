@@ -128,12 +128,13 @@ Parser.prototype = {
         t.col = token.col;
         t.value = token.value;
 
+        if (obj.hasOwnProperty('arity')) {
+            t.arity = obj.arity;
+        }
+
         // Pre parse some values
         if (token.id === 'TYPE') {
             t.type = token.value;
-
-        } else if (token.id === 'STRING' || token.id === 'BOOLEAN' || token.id === 'INTEGER' || token.id === 'FLOAT') {
-            t.arity = 'literal';
 
         } else if (token.id === 'IDENTIFIER') {
             t.arity = 'name';
@@ -200,7 +201,7 @@ Parser.prototype = {
 
             if (e.isAssignment || e.id === 'CALL'
                 || e.id === 'DECREMENT' || e.id === 'INCREMENT'
-                || e.id === 'NEW' || e.id === 'DELETE') {
+                || e.id === 'NEW' || e.id === 'DELETE' || e.id === 'COMPREHENSION') {
 
                 hasSideEffect = true;
                 break;
@@ -328,13 +329,13 @@ Parser.prototype = {
             value: token.value,
             isFunction: false,
             params: null,
-            builtin: true,
+            isBuiltin: true,
             sub: null
         };
 
         // User defined type
         if (token.is('IDENTIFIER')) {
-            token.type.builtin = false;
+            token.type.isBuiltin = false;
             return token;
         }
 
@@ -371,9 +372,8 @@ Parser.prototype = {
 
                 }
 
-                console.log(token.type.sub);
-                if (parentType !== 'map' && token.type.sub.length > 1) {
-                    this.error(token, 'Cannot have multiple sub types for ' + token.type.value.toUpperCase());
+                if (parentType !== 'map' && token.type.sub.length !== 1) {
+                    this.error(token, 'Expected exactly 1 sub type for ' + token.type.value.toUpperCase());
                 }
 
                 if (parentType === 'map' && token.type.sub.length > 2) {
@@ -392,10 +392,33 @@ Parser.prototype = {
 
         }
 
-        // Function type, we don't need param names here!
+        if ((parentType === 'list' || parentType === 'map') && !token.type.sub) {
+            this.error(token, 'Missing sub type for ' + token.type.value.toUpperCase());
+        }
+
+        // Function type, we don't need param names here
         if (this.advanceIf('LEFT_PAREN')) {
             this.getFunctionParams(token.type, true);
             token.type.isFunction = true;
+        }
+
+        // Check for functions returning functions...
+        while (this.advanceIf('LT')) {
+
+            token.type = {
+                returns: token.type,
+                isBuiltin: true,
+                sub: null
+            };
+
+            this.advance('LEFT_PAREN');
+            this.getFunctionParams(token.type, true);
+            token.type.isFunction = true;
+
+        }
+
+        if (this.advanceIf('LEFT_PAREN')) {
+            this.error(token, 'Missing "<" before returning type for ' + token.type.value.toUpperCase());
         }
 
         return token;
@@ -407,7 +430,9 @@ Parser.prototype = {
       */
     getFunctionParams: function(dec, typeOnly) {
 
-        var params = [];
+        var params = [],
+            requiredCount = -1;
+
         if (this.get().not('RIGHT_PAREN')) {
 
             while(true) {
@@ -436,18 +461,33 @@ Parser.prototype = {
 
                     params.push(param);
 
+                // Grab default values too
                 } else {
                     param = this.getParamPair(this.get());
+
+                    // Get the number of required parameters and error out
+                    // when there's a required one after an optional one
+                    if (param.right) {
+                        if (requiredCount === -1) {
+                            requiredCount = params.length;
+                        }
+
+                    } else if (requiredCount !== -1 ) {
+                        this.error('Required parameter after optional one.');
+                    }
+
                     params.push(param);
+
                 }
 
-                param.isConst = isConstant;
+                param.type.isConst = isConstant;
 
                 // Var args like (int b...) method will then receive a list
                 if (this.advanceIf('ELLIPSIS')) {
                     param.vararg = true;
                 }
 
+                param.id = 'PARAMETER';
                 if (this.get().not('COMMA')) {
                     break;
                 }
@@ -459,6 +499,8 @@ Parser.prototype = {
         }
 
         dec.params = params;
+        dec.requiredParams = requiredCount === - 1 ? params.length : requiredCount;
+
         this.advance('RIGHT_PAREN');
 
     },
@@ -471,7 +513,7 @@ Parser.prototype = {
         this.advance('TYPE');
         this.getType(param);
 
-        param.arity = 'parameter';
+        param.arity = 'declaration';
         param.name = this.get().value;
 
         this.advance('IDENTIFIER');
@@ -512,5 +554,7 @@ Parser.prototype = {
 
 };
 
-exports.Parser = Parser;
+exports.ast = function(tokens) {
+    return new Parser().parse(tokens);
+};
 

@@ -41,15 +41,34 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
                 // Check for list comprehension
                 if (parser.tokenIs('FOR')) {
 
+                    this.ifCondition = null;
+                    this.returnIndexes = elements;
+                    this.elseIndexes = [];
+
                     parser.advance('FOR');
                     symbolTable.symbols['FOR'].std.call(this, parser, true);
-                    this.id = 'LIST_COMPREHENSION';
+                    this.id = 'COMPREHENSION';
 
                     if (parser.advanceIf('IF')) {
-                        this.condition = parser.getExpression(2);
 
-                    } else {
-                        this.condition = null;
+                        this.ifCondition = parser.getExpression(2);
+
+                        if (parser.advanceIf('ELSE')) {
+
+                            // Grab indexes for else condition
+                            while (true) {
+
+                                this.elseIndexes.push(parser.getExpression(2));
+                                if (parser.tokenNot('COMMA')) {
+                                    break;
+                                }
+
+                                parser.advance('COMMA');
+
+                            }
+
+                        }
+
                     }
 
                 }
@@ -65,10 +84,10 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
     }
 
     if (this.id === 'LIST') {
-        this.inner = elements;
+        this.items = elements;
 
     } else {
-        this.body = elements[0];
+        this.body = [];
     }
 
     parser.advance('RIGHT_BRACKET');
@@ -152,11 +171,11 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
                     parser.advance('COLON');
                     token.left = parser.getExpression(2);
 
-                    if (this.fields.hasOwnProperty(token.name)) {
-                        parser.error('Duplicated field "' + token.name + '" in hash value');
+                    if (this.fields.hasOwnProperty(token.value)) {
+                        parser.error('Duplicated field "' + token.value + '" in hash value');
 
                     } else {
-                        this.fields[token.name] = token;
+                        this.fields[token.value] = token;
                     }
 
                     if (parser.get().not('COMMA')) {
@@ -266,7 +285,7 @@ symbolTable.addPrefix('LEFT_PAREN', function(parser) {
         this.id = 'CAST';
         var cast = parser.tokenFromSymbol(this);
 
-        cast.type = parser.getType(type);
+        cast.type = parser.getType(type).type;
         parser.advance('RIGHT_PAREN', 'Missing closing parenthesis around CAST');
 
         cast.nud(parser);
@@ -317,13 +336,13 @@ symbolTable.addSymbol('TYPE').checkLeft = function(parser, left) {
 // ----------------------------------------------------------------------------
 symbolTable.addInfix('LEFT_PAREN', 19, function(parser, left) {
 
-    var params = [];
+    var args = [];
 
     // Call on access / list
     if (left.is('DOT', 'INDEX')) {
         this.arity = 'ternary';
         this.left = left;
-        this.inner = params;
+        this.args = args;
         this.id = 'CALL';
 
         if (left.is('LIST')) {
@@ -336,7 +355,7 @@ symbolTable.addInfix('LEFT_PAREN', 19, function(parser, left) {
         this.arity = 'binary';
         this.left = left;
         this.right = left.right;
-        this.inner = params;
+        this.args = args;
         this.id = 'CALL';
 
         if (left.arity !== 'unary' && left.arity !== 'name'
@@ -351,7 +370,7 @@ symbolTable.addInfix('LEFT_PAREN', 19, function(parser, left) {
     if (parser.tokenNot('RIGHT_PAREN')) {
         while (true) {
 
-            params.push(parser.getExpression(2));
+            args.push(parser.getExpression(2));
 
             if (parser.tokenNot('COMMA')) {
                 break;

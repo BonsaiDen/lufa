@@ -102,13 +102,19 @@ function addInfixRight(id, bp, led) {
 
 }
 
-function addPrefix(id, nud, precedence) {
+function addPrefix(id, nud, requiresName) {
 
     var s = addSymbol(id);
     s.nud = nud || function(parser) {
-        this.left = parser.getExpression(18);
+        this.right = parser.getExpression(18);
+
+        if (requiresName && this.right.arity !== 'name') {
+            parser.error(this.right, 'Invalid left-hand side expression for prefix operator,');
+        }
+
         this.arity = 'unary';
         return this;
+
     };
 
     return s;
@@ -120,7 +126,7 @@ function addAssignment(id) {
     return addInfixRight(id, 4, function(parser, left) {
 
         if (left.not('DOT', 'INDEX', 'RANGE', 'MEMBER') && left.arity !== 'name') {
-            parser.error(left, 'Bad left hand value for assignment,');
+            parser.error(left, 'Invalid left-hand side expression for assignment,');
         }
 
         this.left = left;

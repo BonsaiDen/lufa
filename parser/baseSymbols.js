@@ -24,10 +24,8 @@ var symbolTable = require('./symbolTable');
 
 // Statements -----------------------------------------------------------------
 symbolTable.addStatement('BLOCK_START', function(parser) {
-    //new_scope();
     var a = parser.getStatementList();
     parser.advance('BLOCK_END');
-    //scope.pop();
     return a;
 });
 
@@ -127,28 +125,29 @@ symbolTable.addSymbol('RIGHT_CURLY');
 
 
 // Prefix Operators -----------------------------------------------------------
-symbolTable.addPrefix('INCREMENT');
-symbolTable.addPrefix('DECREMENT');
+symbolTable.addPrefix('INCREMENT', null, true);
+symbolTable.addPrefix('DECREMENT', null, true);
 symbolTable.addPrefix('MINUS');
 symbolTable.addPrefix('PLUS');
 symbolTable.addPrefix('ELLIPSIS');
 symbolTable.addPrefix('NOT');
 symbolTable.addPrefix('CAST');
 symbolTable.addPrefix('BIT_NOT');
-symbolTable.addPrefix('MEMBER');
-symbolTable.addPrefix('NEW');
-symbolTable.addPrefix('DELETE');
+symbolTable.addPrefix('MEMBER', null, true);
+symbolTable.addPrefix('NEW', null, true);
+symbolTable.addPrefix('DELETE', null, true);
 
 
 // Literals -------------------------------------------------------------------
-symbolTable.addLiteral('INTEGER');
+symbolTable.addLiteral('INT');
 symbolTable.addLiteral('FLOAT');
 symbolTable.addLiteral('STRING');
-symbolTable.addLiteral('BOOLEAN');
+symbolTable.addLiteral('BOOL');
 symbolTable.addLiteral('NULL');
 
 symbolTable.addSymbol('IDENTIFIER').nud = function() {
     this.id = 'NAME';
+    this.name = this.value;
     this.arity = 'name';
     return this;
 };

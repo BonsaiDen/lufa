@@ -1,0 +1,199 @@
+###
+void repeat(string a, const int b = 0):
+    b = b * 2
+
+void(string, const int) r = repeat
+
+
+int() < (string) foo(const string a = 'test'):
+
+    int() c(string a):
+
+        int b():
+            ret 0
+
+        ret b
+        
+    ret c
+
+
+if 4 > 2:
+    if 5:
+        
+
+int() < (string) < (const string) l = foo
+
+const int e = 4 % 5 * 4.0
+e += 2
+++e
+
+m = 4
+int m
+
+int e = repeat(3, 'test', 2)
+
+list[int] numbers = [1, 2, 3]
+list[string] names = []
+
+list[int] qqqq = 0...e
+
+map[int, string] ids
+    
+#
+
+for int i, string key in ids:
+    for i in numbers:
+
+for a, o in ids:
+
+###
+#for int i in [1, 2, 3, 4, 5]:
+#    int m = i * i
+
+list[int] tens = [i * 10 for int i in 0...10]
+int a
+
+map[int, string] names = [i, 'Number' + (string)i for int i in 0...10]
+
+#list[int] squares = [i * i for int i in [1, 'd', 3, 4]]
+
+
+
+#[i * i, k for int i, string k in [1, 2, 3, 4]]
+#map[int, string] squares = 
+
+# [1, 2, 3, 4, 5, 6] - 1...3 # [4, 5, 6]
+
+###
+
+#import foo
+#import foo as l
+#from foo import data
+#from foo import data as bar
+
+string test = ('foo' * 4) + 'test'
+int a = 4.0 + 2
+
+# TODO warn about implicit conversion instead of erroring out in case of int / float or float / int
+bool isGreater = (8 > 3 && 5 < 3)
+string dasod = (string)(string)true
+
+int add(int a, int b):
+    add() + 2
+    
+    if 4 > 3:
+        ret 'ff'
+
+    ret a + b
+
+void foo():
+    ret
+
+#for int i in 0...10:
+#    print(i)
+
+
+void repeat(string a, const int b = 0):
+    b = b * 2
+
+void(string, int) r = repeat
+
+#repeat('foo', 4, 2)
+#repeat()
+
+list[list[int]] numbers
+map[string, int] stuff
+#
+#numbers = [1, 2, 3]
+
+#stuff = { 'hello': 1 }
+
+#numbers += 2
+
+list[int] < (string, const int) f = repeat
+#
+#    ret
+
+
+
+# a function returning a function which takes a string and returns void
+void(string) < (int) fob
+
+#int ll = 'foo'.length
+
+
+
+
+###
+
+
+###
+
+list b
+list[int] a
+list[list[int]] c
+list[list[User]] d
+
+map[int, string] e = { 1: 'foo' }
+
+
+
+#string foo 
+hash User = {
+    string name,
+    int id = 1
+}
+
+int time
+
+list[int] array
+list[string] array
+
+int test = 0
+
+
+void test(string name, const int num = 2):
+    num = 3
+    name = 'test'
+
+    void level3(string name):
+        int l3
+        num = 5
+
+void hello():
+
+    name = 2
+
+    if name == 2:
+        int ok
+
+    elif name == 3:
+        map[int, string] messages
+
+        if messages > 4:
+            ret name
+            foo = 2
+
+    else:
+
+scope:
+    int a = 0
+
+class Base extends Object:
+    
+    int id = 0
+
+    new Base():
+        ret
+
+    private void hello(const string text = 'none'):
+        ret text
+
+    private void helloOther():
+
+
+for int i in numbers:
+    int i
+    print(i)
+
+###

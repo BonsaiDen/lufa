@@ -40,11 +40,10 @@ symbolTable.addStatement('TYPE', function(parser) {
 
 // Import / Export ------------------------------------------------------------
 // ----------------------------------------------------------------------------
-function parseImportExport(parser) {
+function parseImportExport(parser, base) {
 
     this.arity = 'module';
     this.names = [];
-    this.base = null;
 
     delete this.value;
 
@@ -52,17 +51,32 @@ function parseImportExport(parser) {
 
         var module = parser.getModuleName();
 
-        // Name mapping
+        // As imports
         if (parser.advanceIf('AS')) {
 
             var name = parser.get();
             parser.advance('IDENTIFIER');
-            module.as = name;
+            name.original = module;
 
             // Changes in order to make name resolving easier
             name.isImport = true;
             name.name = name.value;
 
+            module = name;
+            delete name.value;
+
+            if (base) {
+                module.base = base;
+            }
+
+        // From imports
+        } else if (base) {
+            module.base = base;
+            module.isImport = true;
+            module.name = module.value;
+            delete module.value;
+
+        // Plain imports
         } else {
             module.isImport = true;
             module.name = module.value;
@@ -84,6 +98,7 @@ function parseImportExport(parser) {
 
 }
 
+
 symbolTable.addSymbol('AS');
 symbolTable.addStatement('IMPORT', function(parser) {
     return parseImportExport.call(this, parser);
@@ -95,17 +110,14 @@ symbolTable.addStatement('EXPORT', function(parser) {
 
 symbolTable.addStatement('FROM', function(parser) {
 
-    this.id = 'IMPORT';
-    this.arity = 'module';
-
     var base = parser.getModuleName(parser);
-
     parser.advance('IMPORT');
-    parseImportExport.call(this, parser);
 
-    this.base = base;
+    var imp = parseImportExport.call(this, parser, base);
+    imp.id = 'IMPORT';
+    imp.arity = 'module';
 
-    return this;
+    return imp;
 
 });
 
@@ -116,7 +128,7 @@ symbolTable.addStatement('RETURN', function(parser) {
 
     this.arity = 'return';
     if (parser.get().not('EOL')) {
-        this.left = parser.getExpression(2);
+        this.right = parser.getExpression(2);
     }
 
     parser.advance('EOL');
@@ -423,6 +435,8 @@ symbolTable.addStatement('CLASS', function(parser) {
                 }
 
             }
+
+            token.isMember = true;
 
         }
 
