@@ -797,12 +797,67 @@ var Resolver = Class(function(scope) {
     },
 
     resolveCast: function(right, left) {
-        return Resolver.$explicitCastTable.indexOf(this.typeCache.cleanId(right.id) + ':' + TypeCache.$cleanId(left.id)) !== -1;
+
+        var table = Resolver.$explicitCastTable,
+            rid = this.typeCache.cleanId(right.id),
+            lid = this.typeCache.cleanId(left.id);
+
+        for(var i = 0, l = table.length; i < l; i++) {
+
+            var type = table[i][0],
+                targets = table[i][1];
+
+            // TODO for higher level casts make sure to change
+            // this for support of real types in the cast table
+            if (type === rid) {
+
+                // Go through targets
+                for(var e = 0, el = targets.length; e < el; e++) {
+                    if (targets[e] === lid) {
+                        return true;
+                    }
+                }
+
+                return false;
+
+            }
+
+        }
+
+        return false;
+
     },
 
     resolveImplicitCast: function(right, left) {
-        var cast = this.typeCache.cleanId(right.id) + ':' + this.typeCache.cleanId(left.id);
-        return Resolver.$implicitCastTable.indexOf(cast) !== -1;
+
+        var table = Resolver.$implicitCastTable,
+            rid = this.typeCache.cleanId(right.id),
+            lid = this.typeCache.cleanId(left.id);
+
+        for(var i = 0, l = table.length; i < l; i++) {
+
+            var type = table[i][0],
+                targets = table[i][1];
+
+            // TODO for higher level casts make sure to change
+            // this for support of real types in the cast table
+            if (type === rid) {
+
+                // Go through targets
+                for(var e = 0, el = targets.length; e < el; e++) {
+                    if (targets[e] === lid) {
+                        return true;
+                    }
+                }
+
+                return false;
+
+            }
+
+        }
+
+        return false;
+
     },
 
 
@@ -957,41 +1012,24 @@ var Resolver = Class(function(scope) {
         'INCREMENT': [
             ['int', 'int', true],
             ['float', 'float', true]
-        ],
-
-        // Left is the expression to be cast, right the cast (type)
-        'CAST': [
-            ['int', 'string'],
-            ['int', 'float'],
-            ['float', 'string'],
-            ['float', 'int'],
-            ['string', 'int'],
-            ['string', 'float']
         ]
 
     },
 
     // a to b
     $implicitCastTable: [
-        'int:float',
-        'int:bool',
-        'float:int',
-        'float:bool',
-        'string:bool'
+        ['int', ['float', 'bool']],
+        ['float', ['int', 'bool']],
+        ['string', ['bool']]
     ],
 
     // a to b
     $explicitCastTable: [
-        'bool:int',
-        'bool:string',
-        'int:bool',
-        'int:float',
-        'int:string',
-        'float:int',
-        'float:string',
-        'string:int',
-        'string:float',
-        'string:bool'
+
+        ['bool', ['int', 'string']],
+        ['int', ['bool', 'float', 'string']],
+        ['float', ['int', 'string']],
+        ['string', ['int', 'float', 'bool']]
     ]
 
 });

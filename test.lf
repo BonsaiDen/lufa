@@ -54,7 +54,7 @@ string test = 'Hello World'
 
 int l = test.length
 
-scope:
+if (bool)l:
     string l = ''
     int f = l.length
 
