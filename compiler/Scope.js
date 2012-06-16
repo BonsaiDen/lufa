@@ -239,7 +239,6 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
     checkReferencePosition: function(node, original) {
 
-        console.log('foo', node.name);
         if (node.line < original.line || node.line === original.line && node.col < original.col) {
             this.error(node, 'Reference to name "{name}" before definition at line {line}, col {col}', {
                 name: node.name,

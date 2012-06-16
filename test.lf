@@ -50,10 +50,21 @@ for a, o in ids:
 #for int i in [1, 2, 3, 4, 5]:
 #    int m = i * i
 
-list[int] tens = [i * 10 for int i in 0...10]
-int a
+string test = 'Hello World'
 
-map[int, string] names = [i, 'Number' + (string)i for int i in 0...10]
+int l = test.length
+
+scope:
+    string l = ''
+    int f = l.length
+
+list[int] tens = [i * 10 for int i in 0...10]
+#int a
+
+#if 'foo' in [1, 2, 3]:
+    
+
+#map[int, string] names = [i, 'Number' + (string)i for int i in 0...10]
 
 #list[int] squares = [i * i for int i in [1, 'd', 3, 4]]
 

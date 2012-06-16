@@ -2,6 +2,7 @@
 - list / map sub type count validation
 - unify parameter / argument naming
 - '4 in 1...10'
+    - support BOOLEAN in operator
 - resolve user types and hashes as well as maps...
 - ADD BASE CLASS TO result of typeFromNode()
 
@@ -17,7 +18,8 @@
     }
 
 - TODO howto casts lists?
-
+    - support casts on sub types(requires parser additions)
+    - casts on lists should change the inner type
 
 - add mixed type? 
 - Handle null
@@ -28,6 +30,8 @@
 
 - fix list comprehensions errors about references being used before they're defined
 - make @ have a higher binding power than other stuff or so...
+- support overloading on builtin types and operators
+- binary operators need to know stuff like this and need to have custom actions happening?
 
 - classes
 - interfaces

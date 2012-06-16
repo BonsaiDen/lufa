@@ -21,7 +21,8 @@
   * THE SOFTWARE.
   */
 
-var Class = require('../lib/Class').Class;
+var Class = require('../lib/Class').Class,
+    StaticType;
 
 
 // Base Type Classes ----------------------------------------------------------
@@ -29,10 +30,6 @@ var Class = require('../lib/Class').Class;
 var baseTypeClasses = {
 
     '$function': {
-
-        methods: {
-
-        },
 
         members: {
 
@@ -42,23 +39,13 @@ var baseTypeClasses = {
 
     'string': {
 
-        methods: {
-            'upper': {
-                'params': []
-            }
-        },
-
         members: {
-            'length': 'int'
+            length: 'int'
         }
 
     },
 
     'bool': {
-
-        methods: {
-
-        },
 
         members: {
 
@@ -68,10 +55,6 @@ var baseTypeClasses = {
 
     'int': {
 
-        methods: {
-
-        },
-
         members: {
 
         }
@@ -79,10 +62,6 @@ var baseTypeClasses = {
     },
 
     'float': {
-
-        methods: {
-
-        },
 
         members: {
 
@@ -92,33 +71,30 @@ var baseTypeClasses = {
 
     'list': {
 
-        methods: {
-
-        },
-
         members: {
-
+            length: 'int'
         }
 
     },
 
     'map': {
 
-        methods: {
-
-        },
-
         members: {
+            length: 'int',
+
+            keys: function(base) {
+                return StaticType.getListIdentifier(base.sub[0]);
+            },
+
+            values: function(base) {
+                return StaticType.getListIdentifier(base.sub[1]);
+            }
 
         }
 
     },
 
     'hash': {
-
-        methods: {
-
-        },
 
         members: {
 
@@ -134,7 +110,6 @@ var baseTypeClasses = {
 // ----------------------------------------------------------------------------
 var TypeCache = Class(function() {
 
-    this.cached = {};
     this.userClasses = {};
 
 }, {
@@ -165,12 +140,38 @@ var TypeCache = Class(function() {
                 throw new Error('Cannot map type to builtin: ' + type.value);
             }
 
-        } else {
-            // TODO ???
         }
 
     },
 
+    // Resolve a property of a known type ---------------------------------------
+    resolveMember: function(base, property) {
+
+        if (base.hasOwnProperty('typeClass')) {
+
+            if (base.typeClass.members.hasOwnProperty(property)) {
+
+                var member = base.typeClass.members[property];
+
+                // Lists and maps need this to support their sub types
+                if (typeof member === 'function') {
+                    console.log(base);
+                    return member(base);
+
+                } else if (typeof member === 'string' ){
+                    return this.getIdentifierFromArgs(member);
+
+                } else {
+                    return member;
+                }
+
+            }
+
+        } else {
+            return null;
+        }
+
+    },
 
     // Get a type identifier from custom arguments ----------------------------
     getIdentifierFromArgs: function(type, isConst, isFunction) {
@@ -206,6 +207,11 @@ var TypeCache = Class(function() {
 
     // Get a list identifier for the given sub type ---------------------------
     getListIdentifier: function(sub) {
+
+        if (typeof sub === 'string') {
+            sub = this.getIdentifierFromArgs(sub);
+        }
+
         return {
             id: sub ? 'list[' + sub.id + ']' : 'list',
             isFunction: false,
@@ -234,7 +240,7 @@ var TypeCache = Class(function() {
 
     $constEx: /const~/g,
 
-    $cleanId: function(id) {
+    cleanId: function(id) {
         return id.replace(TypeCache.$constEx, '');
     },
 
@@ -249,21 +255,8 @@ var TypeCache = Class(function() {
             return left.id === right.id;
 
         } else {
-            return TypeCache.$cleanId(left.id) === TypeCache.$cleanId(right.id);
+            return this.cleanId(left.id) === this.cleanId(right.id);
         }
-
-    },
-
-    // Resolve a type identifier from a token ---------------------------------
-    getFromToken: function(node) {
-
-        if (this.cached.hasOwnProperty(node.name)) {
-            return this.cached[node.name];
-        }
-
-        this.cached[node.name] = this.getIdentifier(node.type, node);
-        this.cached[node.name].isName = true;
-        return this.cached[node.name];
 
     },
 
@@ -385,5 +378,6 @@ var TypeCache = Class(function() {
 
 });
 
-module.exports = TypeCache;
+StaticType = new TypeCache();
+module.exports = StaticType;
 
