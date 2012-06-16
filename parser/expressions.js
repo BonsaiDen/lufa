@@ -41,15 +41,34 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
                 // Check for list comprehension
                 if (parser.tokenIs('FOR')) {
 
+                    this.ifCondition = null;
+                    this.returnIndexes = elements;
+                    this.elseIndexes = [];
+
                     parser.advance('FOR');
                     symbolTable.symbols['FOR'].std.call(this, parser, true);
                     this.id = 'LIST_COMPREHENSION';
 
                     if (parser.advanceIf('IF')) {
-                        this.condition = parser.getExpression(2);
 
-                    } else {
-                        this.condition = null;
+                        this.ifCondition = parser.getExpression(2);
+
+                        if (parser.advanceIf('ELSE')) {
+
+                            // Grab indexes for else condition
+                            while (true) {
+
+                                this.elseIndexes.push(parser.getExpression(2));
+                                if (parser.tokenNot('COMMA')) {
+                                    break;
+                                }
+
+                                parser.advance('COMMA');
+
+                            }
+
+                        }
+
                     }
 
                 }
@@ -68,7 +87,6 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
         this.items = elements;
 
     } else {
-        this.returnIndexes = elements;
         this.body = [];
     }
 

@@ -90,30 +90,32 @@ var Resolver = Class(function(scope) {
 
     validateConditions: function() {
 
-        var bool = this.typeCache.getIdentifierFromArgs('bool'),
-            scope = this.scope;
-
+        var scope = this.scope;
         for(var i = 0, l = scope.conditions.length; i < l; i++) {
+            this.validateSingleCondition(scope.conditions[i]);
+        }
 
-            var node = scope.conditions[i],
-                right = this.resolveExpression(node).type;
+    },
 
-            if (!this.typeCache.compare(right, bool)) {
+    validateSingleCondition: function(node) {
 
-                if (this.resolveImplicitCast(right, bool)) {
-                    this.warning(node, 'Implicit cast from "{rid}" to "{lid}" in condition', {
-                        lid: bool.id,
-                        rid: right.id
+        var right = this.resolveExpression(node).type,
+            bool = this.typeCache.getIdentifierFromArgs('bool');
 
-                    });
+        if (!this.typeCache.compare(right, bool)) {
 
-                } else {
-                    this.error(node, 'Invalid condition, result of expression is "{rid}" and not "bool"', {
-                        rid: right.id
+            if (this.resolveImplicitCast(right, bool)) {
+                this.warning(node, 'Implicit cast from "{rid}" to "{lid}" in condition', {
+                    lid: bool.id,
+                    rid: right.id
 
-                    }, true);
-                }
+                });
 
+            } else {
+                this.error(node, 'Invalid condition, result of expression is "{rid}" and not "bool"', {
+                    rid: right.id
+
+                }, true);
             }
 
         }
@@ -314,24 +316,52 @@ var Resolver = Class(function(scope) {
                 scope.compile();
                 scope.validate();
 
+                // Index numbers are not balanced
+                if (node.elseIndexes.length !== 0 && node.returnIndexes.length !== node.elseIndexes.length) {
+                    this.error(node, 'Unbalanced number of return indexes in comprehension ', {});
+                }
+
+                function resolveListIndex(index) {
+
+                    // Resolve
+                    var v = scope.resolver.resolveExpression(index);
+                    if (v) {
+                        return this.typeCache.getListIdentifier(v.type);
+
+                    } else {
+                        this.error(index, 'Invalid return for list comprehension', {});
+                    }
+
+                }
+
                 // Type
                 if (node.returnIndexes.length === 1) {
 
-                    value = scope.resolver.resolveExpression(node.returnIndexes[0]);
+                    left = resolveListIndex.call(this, node.returnIndexes[0]);
 
-                    // Return a list type
-                    if (value) {
-                        value = this.typeCache.getListIdentifier(value.type);
-
-                    } else {
-                        this.error(node.returnIndexes[0], 'Invalid return for list comprehension', {});
+                    // Validate condition if present
+                    if (node.ifCondition) {
+                        scope.resolver.validateSingleCondition(node.ifCondition);
+                        right = resolveListIndex.call(this, node.elseIndexes[0]);
                     }
+
+                    // Make sure
+                    if (left && right && !this.typeCache.compare(left, right)) {
+                        this.error(node, 'Return indexes are not of the same type "{lid}" != "{rid}"', {
+                            rid: right.sub[0].id,
+                            lid: left.sub[0].id
+                        });
+                    }
+
+                    value = left;
 
                 // Map
                 } else if (node.returnIndexes.length === 2) {
 
-                } else {
+                    // TODO add stuff for maps
 
+                } else {
+                    // Oh noes! TODO error out
                 }
 
                 console.log('what list?', value);

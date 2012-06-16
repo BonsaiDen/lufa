@@ -50,9 +50,9 @@ for a, o in ids:
 for int i in [1, 2, 3, 4, 5]:
     int m = i * i
 
-list[int] tens = [i * 10 for int i in 0...10]
+list[int] tens = [i * 10 for int i in 0...10 if i else 'foo']
 
-list[int] squares = [i * i for int i in [1, 'd', 3, 4]]
+#list[int] squares = [i * i for int i in [1, 'd', 3, 4]]
 
 
 

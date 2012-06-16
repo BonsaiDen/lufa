@@ -26,8 +26,7 @@
     - if their op is const also validate the range
     - since const map / lists CANNOT be changed
 
-- list comprehensions need their own scope
-- Parse for loop headers extra, these should all return a isList type
+- fix list comprehensions errors about references being used before they're defined
 - make @ have a higher binding power than other stuff or so...
 
 - classes
