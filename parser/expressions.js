@@ -47,7 +47,7 @@ symbolTable.addPrefix('LEFT_BRACKET', function(parser) {
 
                     parser.advance('FOR');
                     symbolTable.symbols['FOR'].std.call(this, parser, true);
-                    this.id = 'LIST_COMPREHENSION';
+                    this.id = 'COMPREHENSION';
 
                     if (parser.advanceIf('IF')) {
 

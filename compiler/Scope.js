@@ -21,7 +21,7 @@
   */
 var Class = require('../lib/Class').Class,
     Resolver = require('./Resolver'),
-    FunctionScope, ClassScope, ForScope;
+    FunctionScope, ClassScope, ForScope, ComprehensionScope;
 
 
 var Scope = Class(function(module, parentScope, baseNode) {
@@ -215,14 +215,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
                 if (defs.hasOwnProperty(node.name || node.value)) {
 
                     var original = defs[node.name || node.value];
-                    if (node.line < original.line || node.line === original.line && node.col < original.col) {
-                        this.error(node, 'Reference to name "{name}" before definition at line {line}, col {col}', {
-                            name: node.name,
-                            line: original.line,
-                            col: original.col
-                        });
-                    }
-
+                    this.checkReferencePosition(node, original);
                     return original;
 
                 }
@@ -244,8 +237,21 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
     },
 
+    checkReferencePosition: function(node, original) {
+
+        console.log('foo', node.name);
+        if (node.line < original.line || node.line === original.line && node.col < original.col) {
+            this.error(node, 'Reference to name "{name}" before definition at line {line}, col {col}', {
+                name: node.name,
+                line: original.line,
+                col: original.col
+            });
+        }
+
+    },
+
     addComprehensionScope: function(comp) {
-        return this.addScope(new ForScope(this.module, this, comp));
+        return this.addScope(new ComprehensionScope(this.module, this, comp));
     },
 
     nodes: {
@@ -353,4 +359,5 @@ module.exports = Scope;
 FunctionScope = require('./FunctionScope');
 ClassScope = require('./ClassScope');
 ForScope = require('./ForScope');
+ComprehensionScope = require('./ComprehensionScope');
 

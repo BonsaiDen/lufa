@@ -218,6 +218,20 @@ var TypeCache = Class(function() {
         };
     },
 
+    getMapIdentifier: function(key, value) {
+        return {
+            id: key && value  ? 'map[' + key.id + ',' + value.id + ']' : 'map',
+            isFunction: false,
+            isConst: false,
+            isMap: true,
+            isList: false,
+            isName: false,
+            typeClass: this._resolveTypeClass('map'),
+            sub: [key, value]
+        };
+    },
+
+
     $constEx: /const~/g,
 
     $cleanId: function(id) {

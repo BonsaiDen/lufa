@@ -309,7 +309,7 @@ var Resolver = Class(function(scope) {
             case 'IDENTIFIER':
                 break;
 
-            case 'LIST_COMPREHENSION':
+            case 'COMPREHENSION':
 
                 // Create a sub scope of the parent on the fly
                 scope = this.scope.addComprehensionScope(node);
@@ -323,13 +323,26 @@ var Resolver = Class(function(scope) {
 
                 function resolveListIndex(index) {
 
-                    // Resolve
                     var v = scope.resolver.resolveExpression(index);
                     if (v) {
                         return this.typeCache.getListIdentifier(v.type);
 
                     } else {
                         this.error(index, 'Invalid return for list comprehension', {});
+                    }
+
+                }
+
+                function resolveMapIndex(indexA, indexB) {
+
+                    var k = scope.resolver.resolveExpression(indexA),
+                        v = scope.resolver.resolveExpression(indexB);
+
+                    if (k && v) {
+                        return this.typeCache.getMapIdentifier(k.type, v.type);
+
+                    } else {
+                        this.error(indexA, 'Invalid return for list comprehension', {});
                     }
 
                 }
@@ -358,14 +371,27 @@ var Resolver = Class(function(scope) {
                 // Map
                 } else if (node.returnIndexes.length === 2) {
 
-                    // TODO add stuff for maps
+                    left = resolveMapIndex.call(this, node.returnIndexes[0], node.returnIndexes[1]);
+
+                    // Validate condition if present
+                    if (node.ifCondition) {
+                        scope.resolver.validateSingleCondition(node.ifCondition);
+                        right = resolveMapIndex.call(this, node.elseIndexes[0], node.returnIndexes[1]);
+                    }
+
+                    // Make sure
+                    if (left && right && !this.typeCache.compare(left, right)) {
+                        this.error(node, 'Return indexes are not of the same type "{lid[0].id},{lid[1].id}" != "{rid[0].id},{rid[1].id}"', {
+                            rid: right.sub,
+                            lid: left.sub
+                        });
+                    }
+
+                    value = left;
 
                 } else {
-                    // Oh noes! TODO error out
+                    this.error(node, 'Invalid number of return indexes for list comprehension', {});
                 }
-
-                console.log('what list?', value);
-
                 break;
 
             // Make sure the right side of the ret statement matches

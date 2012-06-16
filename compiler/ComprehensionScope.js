@@ -20,41 +20,24 @@
   * THE SOFTWARE.
   */
 var Class = require('../lib/Class').Class,
-    Scope = require('./Scope');
+    ForScope = require('./ForScope');
 
-var ForScope = Class(function(module, baseScope, parentScope, baseNode) {
+var ComprehensionScope = Class(function(module, baseScope, parentScope, baseNode) {
 
-    Scope(this, module, baseScope, parentScope, baseNode);
+    ForScope(this, module, baseScope, parentScope, baseNode);
+    this.type = 'comprehension';
 
-    this.body = this.baseNode.body;
-    this.indexes = this.baseNode.indexes;
-    this.iterator = this.baseNode.iterator;
-    this.type = 'loop';
+}, ForScope, {
 
-}, Scope, {
-
-    compile: function() {
-
-        // Define indexes inside the loops body scope
-        for(var i = 0, l = this.indexes.length; i < l; i++) {
-
-            var index = this.indexes[i];
-            if (index.arity === 'declaration') {
-                this.defineName(index);
-            }
-
-        }
-
-        return Scope.compile(this);
-
-    },
-
-    validate: function() {
-        Scope.validate(this);
-        this.resolver.validateForLoop(this);
+    /**
+      * This does not give the desired results in comprehensions
+      * since the syntax itself will result in the indexes being declared after the
+      * first usage in the source; thus, we're leaving this blank
+      */
+    checkReferencePosition: function(node, original) {
     }
 
 });
 
-module.exports = ForScope;
+module.exports = ComprehensionScope;
 

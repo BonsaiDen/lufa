@@ -33,7 +33,7 @@ var Module = Class(function(name, fileData) {
     this.filename = fileData.filename;
     this.ast = fileData.ast;
 
-    console.log(util.inspect(this.ast, false, 8, true));;
+    //console.log(util.inspect(this.ast, false, 8, true));
 
     this.imports = {};
     this.exports = {};
@@ -107,7 +107,7 @@ var Module = Class(function(name, fileData) {
 
         var i, l;
         for(i = 0, l = this.warnings.length; i < l; i++) {
-            console.log(leafy('Warning at line {line}, col {col}: {msg}').map({
+            console.log(leafy('Warn {line}:{col}: {msg}').map({
                 line: this.warnings[i][0].line,
                 col: this.warnings[i][0].col,
                 msg: this.warnings[i][1]
