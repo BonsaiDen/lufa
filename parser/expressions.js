@@ -150,73 +150,43 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
     if (parser.tokenNot('RIGHT_CURLY')) {
 
         // Determine the type
-        var next = parser.peek();
+        var next = parser.peek(),
+            token = parser.get();
 
-        // Hash literal
-        if (next.is('COLON')) {
+        // Hash Value
+        if (token.is('COLON')) {
 
-            var token = parser.get();
+            this.id = 'HASH_VAL';
+            this.fields = {};
 
-            // A hash value { name: x, foo: y }
-            if (token.is('IDENTIFIER')) {
+            while(true) {
 
-                this.id = 'HASHVALUE';
-                this.fields = {};
+                parser.advance('COLON');
 
-                while(true) {
+                token = parser.get();
+                parser.advance('IDENTIFIER');
+                parser.advance('ASSIGN');
+                token.left = parser.getExpression(2);
 
-                    token = parser.get();
+                if (this.fields.hasOwnProperty(token.value)) {
+                    parser.error('Duplicated field "' + token.value + '" in hash value');
 
-                    parser.advance('IDENTIFIER');
-                    parser.advance('COLON');
-                    token.left = parser.getExpression(2);
-
-                    if (this.fields.hasOwnProperty(token.value)) {
-                        parser.error('Duplicated field "' + token.value + '" in hash value');
-
-                    } else {
-                        this.fields[token.value] = token;
-                    }
-
-                    if (parser.get().not('COMMA')) {
-                        break;
-                    }
-
-                    parser.advance('COMMA');
-
+                } else {
+                    this.fields[token.value] = token;
                 }
 
-            // Parses a map construct
-            } else {
-
-                this.id = 'MAPVALUE';
-                this.inner = [];
-
-                while(true) {
-
-                    token = parser.getExpression(2);
-                    parser.advance('COLON');
-                    token.left = parser.getExpression(2);
-
-                    this.inner.push(token);
-
-                    if (parser.get().not('COMMA')) {
-                        break;
-                    }
-
-                    parser.advance('COMMA');
-
+                if (parser.get().not('COMMA')) {
+                    break;
                 }
+
+                parser.advance('COMMA');
 
             }
 
-        // Hash type description {
-        //    string name = '',
-        //    int num
-        // }
-        } else {
+        // Hash Declaration
+        } else if (token.is('IDENTIFIER') && next.is('IDENTIFIER') || token.is('TYPE')) {
 
-            this.id = 'HASHDEC';
+            this.id = 'HASH_DEC';
             this.fields = {};
 
             while(true) {
@@ -250,6 +220,30 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
                 } else {
                     this.fields[dec.name] = dec;
                 }
+
+                if (parser.get().not('COMMA')) {
+                    break;
+                }
+
+                parser.advance('COMMA');
+
+            }
+
+        // Maps
+        } else {
+
+            this.id = 'MAP';
+            this.keys = [];
+
+            while(true) {
+
+                token = parser.getExpression(2);
+                parser.advance('COLON');
+
+                // Do not use right here, it might already be used by the expression on the left
+                token.keyValue = parser.getExpression(2);
+
+                this.keys.push(token);
 
                 if (parser.get().not('COMMA')) {
                     break;

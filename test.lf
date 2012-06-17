@@ -1,7 +1,7 @@
-###
 void repeat(string a, const int b = 0):
     b = b * 2
 
+###
 void(string, const int) r = repeat
 
 
@@ -33,7 +33,6 @@ int m
 int e = repeat(3, 'test', 2)
 
 list[int] numbers = [1, 2, 3]
-list[string] names = []
 
 list[int] qqqq = 0...e
 
@@ -50,21 +49,64 @@ for a, o in ids:
 #for int i in [1, 2, 3, 4, 5]:
 #    int m = i * i
 
-string test = 'Hello World'
+# Hash Declaration
+#hash User = {
+#    string name,
+#    int id
+#}
+#
+## Hash Value
+#hash[User] ivo = {
+#    :name = 'test',
+#    :id = 3
+#}
 
-int l = test.length
+int a = 2
+map[int, string] foo = {
+    a: 'foo',
+    2 + 2: 'bla'
+}
 
-if (bool)l:
-    string l = ''
-    int f = l.length
+#map[int, string] stuff = {}
 
+#int a = 2
+#
+#map[int, string] numberNames = {
+#    1: 'One',
+#    a: 'Two' + 'Two',
+#    3: 'Foo'
+#}
+#
+#list[string] names = []
+#
+#list[int] keys = numberNames.keys()
+#
+#list[int] foo():
+    
+# TODO high level casts
+# list[string] foo = (list[string])[1, 2, 3, 4, 5]
+
+
+#foo()
+
+#list[int] keys = [k for int k, string v in numberNames]
+
+
+#string test = 'Hello World'
+#
+#int l = test.length
+#
+#if (bool)l:
+#    string l = ''
+#    int f = l.length
+#
 list[int] tens = [i * 10 for int i in 0...10]
 #int a
 
 #if 'foo' in [1, 2, 3]:
     
 
-#map[int, string] names = [i, 'Number' + (string)i for int i in 0...10]
+map[int, string] names = [i, 'Number' + (string)i for int i in 0...10]
 
 #list[int] squares = [i * i for int i in [1, 'd', 3, 4]]
 

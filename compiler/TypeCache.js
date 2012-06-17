@@ -82,8 +82,10 @@ var baseTypeClasses = {
         members: {
             length: 'int',
 
+            // TODO use getters and setters?
             keys: function(base) {
-                return StaticType.getListIdentifier(base.sub[0]);
+                return StaticType.getFunctionIdentifier(StaticType.getListIdentifier(base.sub[0]));
+                //return StaticType.getListIdentifier(base.sub[0]);
             },
 
             values: function(base) {
@@ -155,7 +157,6 @@ var TypeCache = Class(function() {
 
                 // Lists and maps need this to support their sub types
                 if (typeof member === 'function') {
-                    console.log(base);
                     return member(base);
 
                 } else if (typeof member === 'string' ){
@@ -233,10 +234,33 @@ var TypeCache = Class(function() {
             isList: false,
             isName: false,
             typeClass: this._resolveTypeClass('map'),
-            sub: [key, value]
+            sub: key && value ? [key, value] : []
         };
     },
 
+    getFunctionIdentifier: function(returnType, params, requiredParams) {
+
+        params = params || [];
+
+        var paramIds = [];
+        for(var i = 0, l = params.length; i < l; i++) {
+            paramIds.push(params[i].id);
+        }
+
+        return {
+            id: returnType.id + '<function(' + paramIds.join(',') + ')',
+            returnType: returnType,
+            isFunction: true,
+            isConst: false,
+            isMap: false,
+            isList: false,
+            isName: false,
+            typeClass: this._resolveTypeClass('$function'),
+            requiredParams: requiredParams != null ? requiredParams : params.length,
+            params: params
+        };
+
+    },
 
     $constEx: /const~/g,
 
@@ -363,7 +387,7 @@ var TypeCache = Class(function() {
 
         // Search userType classes or something like that...
         } else {
-            console.log('UNKNOWN', type);
+            console.log('=========== UNKNOWN TYPE ============\n', type);
             //this.scope.error(node, null, 'Unkown type "' + type.value + '".');
             throw new TypeError('Unknown type: ' + type.value);
         }

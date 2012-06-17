@@ -21,6 +21,7 @@
   */
 var Class = require('../lib/Class').Class,
     Resolver = require('./Resolver'),
+    TypeCache = require('./TypeCache'),
     FunctionScope, ClassScope, ForScope, ComprehensionScope;
 
 
@@ -53,6 +54,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
     this.scopes = [];
     this.resolver = new Resolver(this);
+    this.cachedTypes = {};
 
 }, {
 
@@ -121,24 +123,6 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
     },
 
-    log: function() {
-
-        console.log('');
-        console.log('scope level', this.level);
-
-        for(var d in this.defines) {
-            if (this.defines.hasOwnProperty(d)) {
-                console.log(d + ':', Object.keys(this.defines[d]));
-            }
-        }
-
-        console.log('defaults', this.defaults);
-        console.log('conditions', this.conditions);
-        console.log('expressions', this.expressions);
-        console.log('returns', this.returns);
-
-    },
-
     isDefined: function(node) {
 
         for(var i in this.defines) {
@@ -204,6 +188,45 @@ var Scope = Class(function(module, parentScope, baseNode) {
         this.resolver.validateDefaults();
         this.resolver.validateExpressions();
         this.resolver.validateConditions();
+    },
+
+    resolveTypeFromName: function(node) {
+
+        var name = node.name || node.value;
+        for(var d in this.defines) {
+            if (this.defines.hasOwnProperty(d)) {
+
+                var defs = this.defines[d];
+                if (defs.hasOwnProperty(name)) {
+
+                    var original = defs[name];
+                    this.checkReferencePosition(node, original);
+
+                    if (this.cachedTypes.hasOwnProperty(name)) {
+                        return this.cachedTypes[name];
+                    }
+
+                    this.cachedTypes[name] = TypeCache.getIdentifier(node.type, node);
+                    this.cachedTypes[name].isName = true;
+                    return this.cachedTypes[name];
+
+                }
+
+            }
+        }
+
+        if (this.parentScope) {
+            return this.parentScope.resolveTypeFromName(node);
+
+        } else {
+            this.error(node, 'Reference to undefined name "{name}"', {
+                name: node.name || node.value
+            });
+
+            throw new Resolver.$NameError();
+
+        }
+
     },
 
     resolveName: function(node) {
@@ -322,10 +345,9 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
         VARIABLE: function(v) {
 
-            // Detect hash declaration and create user types
+            // TODO rewrtie to actually work and create a user type // class
             if (v.type.value === 'hash' && v.right && v.right.id === 'HASHDEC') {
 
-                // TODO user type stuff!!!!!!111111111111111
                 this.defineType(v);
 
                 for(var i in v.right.fields) {
@@ -339,7 +361,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
             // Otherwise deal with normal declaration
             } else {
 
-                this.defineName(v, 'name');
+                this.defineName(v);
                 if (v.right) {
                     this.defaults.push(v);
                 }

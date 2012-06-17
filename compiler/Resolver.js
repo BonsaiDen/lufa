@@ -28,9 +28,7 @@ var Class = require('../lib/Class').Class,
 var Resolver = Class(function(scope) {
 
     this.scope = scope;
-    this.typeCache = TypeCache;
     this.expressionHasSideEffect = false;
-    this.cachedTypes = {};
 
 }, {
 
@@ -102,7 +100,7 @@ var Resolver = Class(function(scope) {
     validateSingleCondition: function(node) {
 
         var right = this.resolveExpression(node),
-            bool = this.typeCache.getIdentifierFromArgs('bool');
+            bool = TypeCache.getIdentifierFromArgs('bool');
 
         // In case of an invalid expression break out
         if (!right) {
@@ -111,7 +109,7 @@ var Resolver = Class(function(scope) {
 
         right = right.type;
 
-        if (!this.typeCache.compare(right, bool)) {
+        if (!TypeCache.compare(right, bool)) {
 
             if (this.resolveImplicitCast(right, bool)) {
                 this.warning(node, 'Implicit cast from "{rid}" to "{lid}" in condition', {
@@ -166,8 +164,8 @@ var Resolver = Class(function(scope) {
 
             } else {
 
-                indexA = this.resolveTypeFromName(this.scope.resolveName(indexes[0]));
-                if (!this.typeCache.compare(right.sub[0], indexA)) {
+                indexA = this.scope.resolveTypeFromName(indexes[0]);
+                if (!TypeCache.compare(right.sub[0], indexA)) {
                     this.error(indexes[0], 'Incompatible type for iteration index on list "{lid}" != "{rid}"', {
                         rid: right.sub[0].id,
                         lid: indexA.id
@@ -185,17 +183,17 @@ var Resolver = Class(function(scope) {
                 });
 
             } else {
-                indexA = this.resolveTypeFromName(this.scope.resolveName(indexes[0]));
-                indexB = this.resolveTypeFromName(this.scope.resolveName(indexes[1]));
+                indexA = this.scope.resolveTypeFromName(indexes[0]);
+                indexB = this.scope.resolveTypeFromName(indexes[1]);
 
-                if (!this.typeCache.compare(right.sub[0], indexA)) {
+                if (!TypeCache.compare(right.sub[0], indexA)) {
                     this.error(indexes[0], 'Incompatible type for iteration key on map "{lid}" != "{rid}"', {
                         rid: right.sub[0].id,
                         lid: indexA.id
                     });
                 }
 
-                if (!this.typeCache.compare(right.sub[1], indexB)) {
+                if (!TypeCache.compare(right.sub[1], indexB)) {
                     this.error(indexes[1], 'Incompatible type for iteration value on map "{lid}" != "{rid}"', {
                         rid: right.sub[1].id,
                         lid: indexB.id
@@ -226,7 +224,7 @@ var Resolver = Class(function(scope) {
 
             // Declarations are handled like assignments
             if (node.arity === 'declaration') {
-                type = this.validateAssignment({
+                type = this.resolveAssignment({
                     left: node,
                     right: node.right
                 });
@@ -261,35 +259,17 @@ var Resolver = Class(function(scope) {
             base = null,
             left = null,
             right = null,
-            i, l,
-            scope = null;
+            i, l;
 
         switch(node.id) {
 
             case 'LIST':
+                value = this.resolveListType(node);
+                break;
 
-                // The list type is determined by the first item in the list
-                // subsequent lists must be the same type or will raise errors
-                // if a list is mixed, it will match all assignments
-                for(i = 0, l = node.items.length; i < l; i++) {
-
-                    var item = node.items[i];
-                    if (value === null) {
-                        value = this.resolveExpressionType(item);
-
-                    } else {
-                        if (!this.typeCache.compare(value, this.resolveExpressionType(item))) {
-                            this.error(item, 'Item at index {index} in list does not have the expected type of "{type}"', {
-                                index: i,
-                                type: value.id
-
-                            }, true);
-                        }
-                    }
-
-                }
-
-                value = this.typeCache.getListIdentifier(value);
+            case 'HASH':
+            case 'MAP':
+                value = this.resolveMapType(node);
                 break;
 
             // Left needs to be a list and index an integer
@@ -313,7 +293,7 @@ var Resolver = Class(function(scope) {
 
             case 'NAME':
                 this.expressionHasSideEffect = true;
-                value = this.resolveTypeFromName(this.scope.resolveName(node));
+                value = this.scope.resolveTypeFromName(node);
                 break;
 
             // Is this ever the case? :O
@@ -329,7 +309,7 @@ var Resolver = Class(function(scope) {
                 // Check item type
                 if (right.isList) {
 
-                    if (!this.typeCache.compare(left, right.sub[0])) {
+                    if (!TypeCache.compare(left, right.sub[0])) {
                         this.error(node.left, 'Invalid left-hand operand for IN operator, "{lid}" != "{rid}"', {
                             lid: left.id,
                             rid: right.sub[0].id
@@ -338,7 +318,7 @@ var Resolver = Class(function(scope) {
 
                 // Check key type
                 } else if (right.isMap) {
-                    if (!this.typeCache.compare(left, right.sub[0])) {
+                    if (!TypeCache.compare(left, right.sub[0])) {
                         this.error(node.left, 'Invalid left-hand operand for IN operator, "{lid}" != "{rid}"', {
                             lid: left.id,
                             rid: right.sub[0].id
@@ -350,92 +330,12 @@ var Resolver = Class(function(scope) {
                     this.error(node.right, 'Invalid right-hand operand for IN operator', {});
                 }
 
-                value = this.typeCache.getIdentifierFromArgs('bool');
+                value = TypeCache.getIdentifierFromArgs('bool');
                 break;
 
+            // List and Map Comprehensions
             case 'COMPREHENSION':
-
-                // Create a sub scope of the parent on the fly
-                scope = this.scope.addComprehensionScope(node);
-                scope.compile();
-                scope.validate();
-
-                // Index numbers are not balanced
-                if (node.elseIndexes.length !== 0 && node.returnIndexes.length !== node.elseIndexes.length) {
-                    this.error(node, 'Unbalanced number of return indexes in comprehension ', {});
-                }
-
-                function resolveListIndex(index) {
-
-                    var v = scope.resolver.resolveExpression(index);
-                    if (v) {
-                        return this.typeCache.getListIdentifier(v.type);
-
-                    } else {
-                        this.error(index, 'Invalid return for list comprehension', {});
-                    }
-
-                }
-
-                function resolveMapIndex(indexA, indexB) {
-
-                    var k = scope.resolver.resolveExpression(indexA),
-                        v = scope.resolver.resolveExpression(indexB);
-
-                    if (k && v) {
-                        return this.typeCache.getMapIdentifier(k.type, v.type);
-
-                    } else {
-                        this.error(indexA, 'Invalid return for list comprehension', {});
-                    }
-
-                }
-
-                // Type
-                if (node.returnIndexes.length === 1) {
-
-                    left = resolveListIndex.call(this, node.returnIndexes[0]);
-
-                    // Validate condition if present
-                    if (node.ifCondition) {
-                        scope.resolver.validateSingleCondition(node.ifCondition);
-                        right = resolveListIndex.call(this, node.elseIndexes[0]);
-                    }
-
-                    // Make sure
-                    if (left && right && !this.typeCache.compare(left, right)) {
-                        this.error(node, 'Return indexes are not of the same type "{lid}" != "{rid}"', {
-                            rid: right.sub[0].id,
-                            lid: left.sub[0].id
-                        });
-                    }
-
-                    value = left;
-
-                // Map
-                } else if (node.returnIndexes.length === 2) {
-
-                    left = resolveMapIndex.call(this, node.returnIndexes[0], node.returnIndexes[1]);
-
-                    // Validate condition if present
-                    if (node.ifCondition) {
-                        scope.resolver.validateSingleCondition(node.ifCondition);
-                        right = resolveMapIndex.call(this, node.elseIndexes[0], node.returnIndexes[1]);
-                    }
-
-                    // Make sure
-                    if (left && right && !this.typeCache.compare(left, right)) {
-                        this.error(node, 'Return indexes are not of the same type "{lid[0].id},{lid[1].id}" != "{rid[0].id},{rid[1].id}"', {
-                            rid: right.sub,
-                            lid: left.sub
-                        });
-                    }
-
-                    value = left;
-
-                } else {
-                    this.error(node, 'Invalid number of return indexes for list comprehension', {});
-                }
+                value = this.resolveComprehensionType(node);
                 break;
 
             // Make sure the right side of the ret statement matches
@@ -443,18 +343,18 @@ var Resolver = Class(function(scope) {
             case 'RETURN':
 
                 base = this.scope.returnScope.baseNode;
-                left = this.typeCache.getIdentifier(base.type, base).returnType;
+                left = TypeCache.getIdentifier(base.type, base).returnType;
 
                 // TODO resolveFromId does not return a fully compatible object yet
                 // add baseClass to all types and unify data structure
                 if (!node.right) {
-                    right = this.typeCache.getIdentifierFromArgs('void');
+                    right = TypeCache.getIdentifierFromArgs('void');
 
                 } else {
                     right = this.resolveExpressionType(node.right);
                 }
 
-                if (this.typeCache.compare(left, right)) {
+                if (TypeCache.compare(left, right)) {
                     value = left;
                 }
 
@@ -469,7 +369,7 @@ var Resolver = Class(function(scope) {
 
             case 'VARIABLE':
             case 'PARAMETER':
-                value = this.resolveTypeFromName(node);
+                value = this.scope.resolveTypeFromName(node);
                 break;
 
             // use the member base to get the baseClass of the current class body
@@ -486,7 +386,7 @@ var Resolver = Class(function(scope) {
             case 'DOT':
 
                 base = this.resolveExpressionType(node.left);
-                left = this.typeCache.resolveMember(base, node.right.value);
+                left = TypeCache.resolveMember(base, node.right.value);
 
                 if (!left) {
                     this.error(node, 'Type "{rid}" has no member "{property}"', {
@@ -497,6 +397,7 @@ var Resolver = Class(function(scope) {
                 } else {
                     value = left;
                 }
+
                 break;
 
             // Make sure the cast is allowed and not useless (e.g. (int)4)
@@ -505,9 +406,9 @@ var Resolver = Class(function(scope) {
                 if (node.type.isBuiltin) {
 
                     right = this.resolveExpressionType(node.right);
-                    value = this.typeCache.getIdentifier(node.type);
+                    value = TypeCache.getIdentifier(node.type);
 
-                    if (this.typeCache.compare(right, value)) {
+                    if (TypeCache.compare(right, value)) {
                         this.warning(node, 'Cast from "{rid}" to "{lid}" has no effect', {
                             rid: right.id,
                             lid: left.id
@@ -528,12 +429,12 @@ var Resolver = Class(function(scope) {
             // Make sure the object is callable and give the returnType as
             // the result
             case 'CALL':
-                value = this.validateFunctionCall(node);
+                value = this.resolveFunctionCall(node);
                 break;
 
             // Easy stuff :)
             case 'ASSIGN':
-                value = this.validateAssignment(node);
+                value = this.resolveAssignment(node);
                 break;
 
             // Binary and unary expressions
@@ -560,13 +461,12 @@ var Resolver = Class(function(scope) {
                     }
 
                 } else if (node.arity === 'unary') {
-
                     right = this.resolveExpressionType(node.right);
                     value = this.resolveUnary(node.id, right, node);
                     break;
 
                 } else if (node.arity === 'literal') {
-                    value = this.typeCache.getIdentifierFromArgs(node.id.toLowerCase());
+                    value = TypeCache.getIdentifierFromArgs(node.id.toLowerCase());
 
                 } else {
                     throw new Error('Unhandled expression type: ' + node.id + ':' + node.arity);
@@ -580,7 +480,7 @@ var Resolver = Class(function(scope) {
 
     },
 
-    validateAssignment: function(node) {
+    resolveAssignment: function(node) {
 
         this.expressionHasSideEffect = true;
 
@@ -609,11 +509,15 @@ var Resolver = Class(function(scope) {
                 }
 
             // Plain assignments
-            } else if (this.typeCache.compare(left, right)) {
+            } else if (TypeCache.compare(left, right)) {
                 value = left;
 
             // Special case for empty lists
             } else if (left.isList && right.id === 'list') {
+                value = left;
+
+            // Special case for empty maps
+            } else if (left.isMap && right.id === 'map') {
                 value = left;
             }
 
@@ -645,7 +549,7 @@ var Resolver = Class(function(scope) {
 
     },
 
-    validateFunctionCall: function(node) {
+    resolveFunctionCall: function(node) {
 
         this.expressionHasSideEffect = true;
 
@@ -695,7 +599,7 @@ var Resolver = Class(function(scope) {
 
         arg = this.resolveExpressionType(arg);
 
-        if (!this.typeCache.compare(arg, param)) {
+        if (!TypeCache.compare(arg, param)) {
             this.error(call.args[i], 'Argument type mismatch "{arg}" != "{param}"', {
                 index: i + 1,
                 name: node.name,
@@ -707,16 +611,162 @@ var Resolver = Class(function(scope) {
 
     },
 
-    // Resolve types from names -----------------------------------------------
-    resolveTypeFromName: function(node) {
+    resolveListType: function(node) {
 
-        if (this.cachedTypes.hasOwnProperty(node.name)) {
-            return this.cachedTypes[node.name];
+        // The list type is determined by the first item in the list
+        // subsequent lists must be the same type or will raise errors
+        // if a list is mixed, it will match all assignments
+        var value = null;
+        for(var i = 0, l = node.items.length; i < l; i++) {
+
+            var item = node.items[i];
+            if (value === null) {
+                value = this.resolveExpressionType(item);
+
+            } else {
+                if (!TypeCache.compare(value, this.resolveExpressionType(item))) {
+                    this.error(item, 'Item at index {index} in list does not have the expected type of "{type}"', {
+                        index: i,
+                        type: value.id
+
+                    }, true);
+                }
+            }
+
         }
 
-        this.cachedTypes[node.name] = this.typeCache.getIdentifier(node.type, node);
-        this.cachedTypes[node.name].isName = true;
-        return this.cachedTypes[node.name];
+        return TypeCache.getListIdentifier(value);
+
+    },
+
+    resolveMapType: function(node) {
+
+        var key, value = null;
+
+        // Empty map
+        if (!node.keys) {
+            return TypeCache.getMapIdentifier();
+        }
+
+        for(var i = 0, l = node.keys.length; i < l; i++) {
+
+            var item = node.keys[i];
+            if (value === null) {
+                key = this.resolveExpressionType(item);
+                value = this.resolveExpressionType(item.keyValue);
+
+            } else {
+
+                if (!TypeCache.compare(key, this.resolveExpressionType(item))) {
+                    this.error(item, 'Key at index {index} in map does not have the expected type of "{type}"', {
+                        index: i,
+                        type: key.id
+
+                    }, true);
+                }
+
+                if (!TypeCache.compare(value, this.resolveExpressionType(item.keyValue))) {
+                    this.error(item.keyValue, 'Value at index {index} in map does not have the expected type of "{type}"', {
+                        index: i,
+                        type: value.id
+
+                    }, true);
+                }
+
+            }
+
+        }
+
+        return TypeCache.getMapIdentifier(key, value);
+
+    },
+
+    resolveComprehensionType: function(node) {
+
+        // Create a sub scope of the parent on the fly
+        var scope = this.scope.addComprehensionScope(node);
+        scope.compile();
+        scope.validate();
+
+        // Index numbers are not balanced
+        if (node.elseIndexes.length !== 0 && node.returnIndexes.length !== node.elseIndexes.length) {
+            this.error(node, 'Unbalanced number of return indexes in comprehension ', {});
+        }
+
+        function resolveListIndex(index) {
+
+            var v = scope.resolver.resolveExpression(index);
+            if (v) {
+                return TypeCache.getListIdentifier(v.type);
+
+            } else {
+                this.error(index, 'Invalid return for list comprehension', {});
+            }
+
+        }
+
+        function resolveMapIndex(indexA, indexB) {
+
+            var k = scope.resolver.resolveExpression(indexA),
+                v = scope.resolver.resolveExpression(indexB);
+
+            if (k && v) {
+                return TypeCache.getMapIdentifier(k.type, v.type);
+
+            } else {
+                this.error(indexA, 'Invalid return for list comprehension', {});
+            }
+
+        }
+
+        // Type
+        var left, right, value = null;
+        if (node.returnIndexes.length === 1) {
+
+            left = resolveListIndex.call(this, node.returnIndexes[0]);
+
+            // Validate condition if present
+            if (node.ifCondition) {
+                scope.resolver.validateSingleCondition(node.ifCondition);
+                right = resolveListIndex.call(this, node.elseIndexes[0]);
+            }
+
+            // Make sure
+            if (left && right && !TypeCache.compare(left, right)) {
+                this.error(node, 'Return indexes are not of the same type "{lid}" != "{rid}"', {
+                    rid: right.sub[0].id,
+                    lid: left.sub[0].id
+                });
+            }
+
+            value = left;
+
+        // Map
+        } else if (node.returnIndexes.length === 2) {
+
+            left = resolveMapIndex.call(this, node.returnIndexes[0], node.returnIndexes[1]);
+
+            // Validate condition if present
+            if (node.ifCondition) {
+                scope.resolver.validateSingleCondition(node.ifCondition);
+                right = resolveMapIndex.call(this, node.elseIndexes[0], node.returnIndexes[1]);
+            }
+
+            // Make sure
+            if (left && right && !TypeCache.compare(left, right)) {
+                this.error(node, 'Return indexes are not of the same type "{lid[0].id},{lid[1].id}" != "{rid[0].id},{rid[1].id}"', {
+                    rid: right.sub,
+                    lid: left.sub
+                });
+            }
+
+            value = left;
+
+        } else {
+            this.error(node, 'Invalid number of return indexes for list comprehension', {});
+        }
+
+        return value;
 
     },
 
@@ -727,7 +777,7 @@ var Resolver = Class(function(scope) {
         if (right) {
 
             var types = Resolver.$unaryOperatorTable[op],
-                id = this.typeCache.cleanId(right.id);
+                id = TypeCache.cleanId(right.id);
 
             for(var i = 0, l = types.length; i < l; i++) {
                 if (types[i][0] === id) {
@@ -750,7 +800,7 @@ var Resolver = Class(function(scope) {
 
                     }
 
-                    value = this.typeCache.getIdentifierFromArgs(def[1]);
+                    value = TypeCache.getIdentifierFromArgs(def[1]);
                     break;
 
                 }
@@ -772,8 +822,8 @@ var Resolver = Class(function(scope) {
     resolveBinary: function(op, left, right) {
 
         var types = Resolver.$binaryOperatorTable[op],
-            lid = this.typeCache.cleanId(left.id),
-            rid = this.typeCache.cleanId(right.id);
+            lid = TypeCache.cleanId(left.id),
+            rid = TypeCache.cleanId(right.id);
 
         for(var i = 0, l = types.length; i < l; i++) {
 
@@ -782,7 +832,7 @@ var Resolver = Class(function(scope) {
 
                 // TODO move to TypeCache and abstract in a better way
                 if (typeof type[2] === 'string') {
-                    return this.typeCache.getIdentifierFromArgs(type[2]);
+                    return TypeCache.getIdentifierFromArgs(type[2]);
 
                 } else {
                     return type[2];
@@ -799,8 +849,8 @@ var Resolver = Class(function(scope) {
     resolveCast: function(right, left) {
 
         var table = Resolver.$explicitCastTable,
-            rid = this.typeCache.cleanId(right.id),
-            lid = this.typeCache.cleanId(left.id);
+            rid = TypeCache.cleanId(right.id),
+            lid = TypeCache.cleanId(left.id);
 
         for(var i = 0, l = table.length; i < l; i++) {
 
@@ -831,8 +881,8 @@ var Resolver = Class(function(scope) {
     resolveImplicitCast: function(right, left) {
 
         var table = Resolver.$implicitCastTable,
-            rid = this.typeCache.cleanId(right.id),
-            lid = this.typeCache.cleanId(left.id);
+            rid = TypeCache.cleanId(right.id),
+            lid = TypeCache.cleanId(left.id);
 
         for(var i = 0, l = table.length; i < l; i++) {
 
