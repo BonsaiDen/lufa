@@ -396,6 +396,7 @@ var TypeCache = Class(function() {
 
         } else if (type.type === 'class') {
             // TODO class types
+            value = null;
 
         } else {
             console.log('=========== UNKNOWN TYPE ============\n', type, node);
@@ -422,7 +423,7 @@ var TypeCache = Class(function() {
 
             // TODO This should be members?
             fieldsId: '',
-            fields: { },
+            fields: {},
 
             sub: sub ? sub : null
         };

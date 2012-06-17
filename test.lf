@@ -45,14 +45,39 @@ for int i, string key in ids:
 
 for a, o in ids:
 
+
+
 ###
+
+for a in 0...10:
+
+#if { 1: 'test' } has 'test':
+#    
+#
+#if [1, 2, 3, 4] has 1:
+    
+
+map[string, void(string, const int)] funcs
+
+funcs['repeat'] = repeat # TODO does this work as expected
+
+
+# TODO what should be returned in case of missing indexes?
+list[int] b = [1, 2, 3, 4, 5][0::-1]
+int index = { 1: 'foo', 2: 'bla' }[:'foo']
+
+
+int a = [1, 2, 3, 4, 5][2]
+string name = { 1: 'foo', 2: 'bla' }[1]
+
+
 #for int i in [1, 2, 3, 4, 5]:
 #    int m = i * i
 
 # Hash Declaration
 hash User = {
     string name,
-    int id
+    int id = 4
 }
 
 hash[User] Admin = {

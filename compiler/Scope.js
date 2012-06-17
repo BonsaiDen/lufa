@@ -200,8 +200,8 @@ var Scope = Class(function(module, parentScope, baseNode) {
                         return this.cachedTypes[name];
                     }
 
-                    if (node.type.isBuiltin) {
-                        this.cachedTypes[name] = TypeCache.getIdentifier(node.type, node);
+                    if (original.type.isBuiltin) {
+                        this.cachedTypes[name] = TypeCache.getIdentifier(original.type, original);
                         this.cachedTypes[name].isName = true;
 
                     } else {
@@ -216,7 +216,6 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
                             var types = scope.defines.types;
                             if (types.hasOwnProperty(node.type.value)) {
-                                //console.log('found user type', );
                                 node = types[node.type.value];
                                 this.cachedTypes[name] = TypeCache.getIdentifier(node.type, node, null, null, this);
                                 break;
@@ -250,42 +249,11 @@ var Scope = Class(function(module, parentScope, baseNode) {
     },
 
     // TODO remove
-    resolveName: function(node) {
-
-        for(var d in this.defines) {
-            if (this.defines.hasOwnProperty(d)) {
-
-                var defs = this.defines[d];
-                if (defs.hasOwnProperty(node.name || node.value)) {
-
-                    var original = defs[node.name || node.value];
-                    this.checkReferencePosition(node, original);
-                    return original;
-
-                }
-
-            }
-        }
-
-        if (this.parentScope) {
-            return this.parentScope.resolveName(node);
-
-        } else {
-            this.error(node, 'Reference to undefined name "{name}"', {
-                name: node.name || node.value
-            });
-
-            throw new Resolver.$NameError();
-
-        }
-
-    },
-
     checkReferencePosition: function(node, original) {
 
         if (node.line < original.line || node.line === original.line && node.col < original.col) {
             this.error(node, 'Reference to name "{name}" before definition at line {line}, col {col}', {
-                name: node.name,
+                name: node.name || node.value,
                 line: original.line,
                 col: original.col
             });
@@ -389,7 +357,8 @@ var Scope = Class(function(module, parentScope, baseNode) {
         if (!this.isDefined(node)) {
 
             // TODO support sub types correctly
-            var foo = this.defines.types[node.name] = {
+            var right = node.right;
+            this.defines.types[node.name] = {
 
                 type: {
                     isBuiltin: false,
@@ -398,28 +367,20 @@ var Scope = Class(function(module, parentScope, baseNode) {
                     sub: node.type.sub
                 },
 
-                fields: node.right.fields || {}
+                fields: right.fields || {}
 
             };
 
-            //console.log(foo);
+            // Validate field defaults
+            for(var i in right.fields) {
+                if (right.fields.hasOwnProperty(i)) {
+                    if (right.fields[i].right) {
+                        this.defaults.push(right.fields[i].right);
+                    }
+                }
+            }
 
         }
-
-        //this.types[node.name] = ;
-
-        //console.log(this.types);
-        //console.log(node);
-
-                //this.defineType(v);
-
-                //for(var i in v.right.fields) {
-                    //if (v.right.fields.hasOwnProperty(i)) {
-                        //if (v.right.fields[i].right) {
-                            //this.defaults.push(v.right.fields[i]);
-                        //}
-                    //}
-                //}
 
     }
 

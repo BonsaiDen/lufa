@@ -251,6 +251,20 @@ var Resolver = Class(function(scope) {
 
     },
 
+    resolveIndexExpression: function(left, inner, msg) {
+
+        var type = this.resolveExpressionType(inner),
+            i = TypeCache.getIdentifierFromArgs('int');
+
+        if (!TypeCache.compare(type, i)) {
+            this.error(inner, msg || 'Invalid list index, expected "{lid}" but got "{rid}"', {
+                lid: i.id,
+                rid: type.id
+            });
+        }
+
+    },
+
     // TODO check wether expressions are "Plain" meaning that they only use constatns or literals but do no member / name lookup or any calls
     resolveExpressionType: function(node, parent) {
 
@@ -272,23 +286,89 @@ var Resolver = Class(function(scope) {
                 value = this.resolveMapType(node);
                 break;
 
-            // Left needs to be a list and index an integer
-            // in case the list is constant
-            // try to figure out the value from the declaration
-            // and do a bounds check! :)
-            //
-            // List can also be a map, type of inner needs to match the first subtype
-            // of the map. If the map is const, we do a field lookup for the name.
             case 'INDEX':
-                // Left should be list, map or hash
+
+                left = this.resolveExpressionType(node.left);
+
+                // Inner must be an integer in case of a list
+                if (left.isList) {
+                    this.resolveIndexExpression(left, node.inner);
+                    value = left.sub[0];
+
+                // Map, inner must be key type of map
+                } else if (left.isMap) {
+
+                    right = this.resolveExpressionType(node.inner);
+
+                    i = left.sub[0];
+                    if (!TypeCache.compare(right, i)) {
+                        this.error(node.inner, 'Invalid map index, expected "{lid}" but got "{rid}"', {
+                            lid: i.id,
+                            rid: right.id
+                        });
+                    }
+
+                    value = left.sub[1];
+
+                // Invalid left side operand
+                } else {
+                    this.error(node.left, 'Invalid left-hand operand for indexing', {});
+                }
+
                 break;
 
-            // TODO move this and above into external functions
-            // to reduce code bloat
-            // Same as above, just more fancy
+            // Ranges on lists, and reverse indexing on maps
+            // [1, 2, 3, 4][0:2:-1] # from, to, step
+            // { 1: 'foo', 2: 'bla}[:'bla'] # reverse
             case 'RANGE':
+
+                left = this.resolveExpressionType(node.left);
+
+                // Inner must be an integer in case of a list
+                if (left.isList) {
+
+                    // TODO Do more validation?
+                    if (node.inner[0] !== null) {
+                        this.resolveIndexExpression(left, node.inner[0], 'Invalid range start, expected "{lid}" but got "{rid}"');
+                    }
+
+                    if (node.inner[1] !== null) {
+                        this.resolveIndexExpression(left, node.inner[1], 'Invalid range end, expected "{lid}" but got "{rid}"');
+                    }
+
+                    if (node.inner[2] !== null) {
+                        this.resolveIndexExpression(left, node.inner[2], 'Invalid range step, expected "{lid}" but got "{rid}"');
+                    }
+
+                    value = left;
+
+                // Map, inner must be key type of map
+                } else if (left.isMap) {
+
+                    // Make sure only the second inner is set
+                    if (!!node.inner[0] || !node.inner[1] || !!node.inner[2]) {
+                        this.error(node.left, 'Invalid reverse map index', {});
+                    }
+
+                    right = this.resolveExpressionType(node.inner[1]);
+
+                    i = left.sub[1];
+                    if (!TypeCache.compare(right, i)) {
+                        this.error(node.inner, 'Invalid reverser map index, expected "{lid}" but got "{rid}"', {
+                            lid: i.id,
+                            rid: right.id
+                        });
+                    }
+
+                    value = left.sub[0];
+
+                // Invalid left side operand
+                } else {
+                    this.error(node.left, 'Invalid left-hand operand for range', {});
+                }
+
                 // Left must be a list
-                // returns type of left
+                // returns sub type of left
                 break;
 
             case 'NAME':
@@ -300,7 +380,7 @@ var Resolver = Class(function(scope) {
             case 'IDENTIFIER':
                 break;
 
-            // Boolean in operator
+            // Boolean IN operator
             case 'IN':
 
                 left = this.resolveExpressionType(node.left);
@@ -331,6 +411,10 @@ var Resolver = Class(function(scope) {
                 }
 
                 value = TypeCache.getIdentifierFromArgs('bool');
+                break;
+
+            // Boolean HAS operator, reverse of IN
+            case 'HAS':
                 break;
 
             // List and Map Comprehensions
