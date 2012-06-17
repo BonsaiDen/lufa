@@ -162,12 +162,6 @@ var Scope = Class(function(module, parentScope, baseNode) {
         }
     },
 
-    defineType: function(node) {
-        if (!this.isDefined(node)) {
-            this.defines.types[node.name] = node;
-        }
-    },
-
     defineImport: function(node) {
 
         if (!this.isDefined(node)) {
@@ -206,8 +200,34 @@ var Scope = Class(function(module, parentScope, baseNode) {
                         return this.cachedTypes[name];
                     }
 
-                    this.cachedTypes[name] = TypeCache.getIdentifier(node.type, node);
-                    this.cachedTypes[name].isName = true;
+                    if (node.type.isBuiltin) {
+                        this.cachedTypes[name] = TypeCache.getIdentifier(node.type, node);
+                        this.cachedTypes[name].isName = true;
+
+                    } else {
+
+                        if (this.cachedTypes.hasOwnProperty(name)) {
+                            return this.cachedTypes[name];
+                        }
+
+                        // Find the original user type description
+                        var scope = this;
+                        while(scope) {
+
+                            var types = scope.defines.types;
+                            if (types.hasOwnProperty(node.type.value)) {
+                                //console.log('found user type', );
+                                node = types[node.type.value];
+                                this.cachedTypes[name] = TypeCache.getIdentifier(node.type, node, null, null, this);
+                                break;
+                            }
+
+                            scope = scope.parentScope;
+
+                        }
+
+                    }
+
                     return this.cachedTypes[name];
 
                 }
@@ -220,7 +240,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
         } else {
             this.error(node, 'Reference to undefined name "{name}"', {
-                name: node.name || node.value
+                name: name
             });
 
             throw new Resolver.$NameError();
@@ -229,6 +249,7 @@ var Scope = Class(function(module, parentScope, baseNode) {
 
     },
 
+    // TODO remove
     resolveName: function(node) {
 
         for(var d in this.defines) {
@@ -346,17 +367,8 @@ var Scope = Class(function(module, parentScope, baseNode) {
         VARIABLE: function(v) {
 
             // TODO rewrtie to actually work and create a user type // class
-            if (v.type.value === 'hash' && v.right && v.right.id === 'HASHDEC') {
-
-                this.defineType(v);
-
-                for(var i in v.right.fields) {
-                    if (v.right.fields.hasOwnProperty(i)) {
-                        if (v.right.fields[i].right) {
-                            this.defaults.push(v.right.fields[i]);
-                        }
-                    }
-                }
+            if (v.type.value === 'hash') {
+                this.defineHashType(v);
 
             // Otherwise deal with normal declaration
             } else {
@@ -369,6 +381,45 @@ var Scope = Class(function(module, parentScope, baseNode) {
             }
 
         }
+
+    },
+
+    defineHashType: function(node) {
+
+        if (!this.isDefined(node)) {
+
+            // TODO support sub types correctly
+            var foo = this.defines.types[node.name] = {
+
+                type: {
+                    isBuiltin: false,
+                    value: node.name,
+                    type: 'hash',
+                    sub: node.type.sub
+                },
+
+                fields: node.right.fields || {}
+
+            };
+
+            //console.log(foo);
+
+        }
+
+        //this.types[node.name] = ;
+
+        //console.log(this.types);
+        //console.log(node);
+
+                //this.defineType(v);
+
+                //for(var i in v.right.fields) {
+                    //if (v.right.fields.hasOwnProperty(i)) {
+                        //if (v.right.fields[i].right) {
+                            //this.defaults.push(v.right.fields[i]);
+                        //}
+                    //}
+                //}
 
     }
 

@@ -285,7 +285,7 @@ var TypeCache = Class(function() {
     },
 
     // Resolve a type identifier from several parameters ----------------------
-    getIdentifier: function(type, node, parent, getReturn) {
+    getIdentifier: function(type, node, parent, getReturn, scope) {
 
         var that = this;
 
@@ -385,16 +385,69 @@ var TypeCache = Class(function() {
             value.returnType = this.getIdentifier(type.returns, null, value);
             getParams(type.params, value);
 
-        // Search userType classes or something like that...
+        // Create a user type
+        } else if (type.type === 'hash') {
+
+            // TODO assignments need to check the fieldsId!!!
+            // which needs to be the same in case of an map thingy
+            value = this.getHashIdentifier(type.value, node.fields, type.sub ? scope.resolveTypeFromName({name: type.sub[0].value, type: type.sub[0] }) : null);
+
+            // Subs
+
+        } else if (type.type === 'class') {
+            // TODO class types
+
         } else {
-            console.log('=========== UNKNOWN TYPE ============\n', type);
-            //this.scope.error(node, null, 'Unkown type "' + type.value + '".');
+            console.log('=========== UNKNOWN TYPE ============\n', type, node);
             throw new TypeError('Unknown type: ' + type.value);
         }
 
         if (parent) {
             parent.id = value.id + '<' + parent.id;
         }
+
+        return value;
+
+    },
+
+    getHashIdentifier: function(name, fields, sub) {
+
+        var value = {
+            id: name ? 'hash:' + name : 'hash',
+            isFunction: false,
+            isHash: true,
+            isList: false,
+            isMap: false,
+            isName: false,
+
+            // TODO This should be members?
+            fieldsId: '',
+            fields: { },
+
+            sub: sub ? sub : null
+        };
+
+        // TODO merge fieldIds
+        // TODO how to compare these?
+        if (sub) {
+            value.id += '[' + sub.id + ']';
+            //value.fields
+        }
+
+        // Fields
+        var fieldIds = [];
+        for(var key in fields) {
+            if (fields.hasOwnProperty(key)) {
+
+                var field = fields[key];
+                value.fields[key] = this.getIdentifier(field.type, field);
+                fieldIds.push(value.fields[key].id);
+
+            }
+        }
+
+        //console.log(fieldIds);
+        value.fieldsId = fieldIds.join(',');
 
         return value;
 

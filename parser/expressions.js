@@ -206,12 +206,13 @@ symbolTable.addPrefix('LEFT_CURLY', function(parser) {
 
                 }
 
+                token = parser.get()
                 if (!(parser.advanceIf('TYPE') || parser.advanceIf('IDENTIFIER'))) {
                     parser.error('Expected TYPE or IDENTIFIER, but got %t');
                 }
 
                 // Parse type declaration
-                var dec = parser.getDeclaration(parser.get(), true, false, true);
+                var dec = parser.getDeclaration(token, true, false, true);
                 dec.isConst = isConstant;
 
                 if (this.fields.hasOwnProperty(dec.name)) {

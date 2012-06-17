@@ -50,10 +50,20 @@ for a, o in ids:
 #    int m = i * i
 
 # Hash Declaration
-#hash User = {
-#    string name,
-#    int id
-#}
+hash User = {
+    string name,
+    int id
+}
+
+hash[User] Admin = {
+    bool edited
+}
+
+scope:
+    User foo = {}
+    Admin bla = {}
+    Admin test = bla
+
 #
 ## Hash Value
 #hash[User] ivo = {
@@ -61,11 +71,12 @@ for a, o in ids:
 #    :id = 3
 #}
 
-int a = 2
-map[int, string] foo = {
-    a: 'foo',
-    2 + 2: 'bla'
-}
+
+#int a = 2
+#map[int, string] foo = {
+#    a: 'foo',
+#    2 + 2: 'bla'
+#}
 
 #map[int, string] stuff = {}
 
@@ -100,13 +111,13 @@ map[int, string] foo = {
 #    string l = ''
 #    int f = l.length
 #
-list[int] tens = [i * 10 for int i in 0...10]
+#list[int] tens = [i * 10 for int i in 0...10]
 #int a
 
 #if 'foo' in [1, 2, 3]:
     
 
-map[int, string] names = [i, 'Number' + (string)i for int i in 0...10]
+#map[int, string] names = [i, 'Number' + (string)i for int i in 0...10]
 
 #list[int] squares = [i * i for int i in [1, 'd', 3, 4]]
 
